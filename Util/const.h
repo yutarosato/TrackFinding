@@ -48,14 +48,6 @@
 #include <TMatrixD.h>
 #include <TMatrixDSym.h>
 
-
-const Int_t nvane = 8;
-const Int_t nvane_shape = 4;
-const Double_t vane_width  = 210; // [mm]
-const Double_t vane_height = 700; // [mm]
-const Double_t vane_inner  =  75; // [mm]
-
-const Int_t nbase = 3;
-const double r_base_point = 200; // mm
+const Int_t n_vane = 40;
 
 #endif

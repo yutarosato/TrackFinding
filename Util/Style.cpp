@@ -44,7 +44,7 @@ TStyle* Style( Int_t fl ){
   if( fl2==0 ){ // default
     myStyle->SetPadBottomMargin(0.13);
     myStyle->SetPadTopMargin   (0.10);
-    myStyle->SetPadRightMargin (0.10);
+    myStyle->SetPadRightMargin (0.13);
     myStyle->SetPadLeftMargin  (0.15);
   }else{ // wide margin
     myStyle->SetPadBottomMargin(0.20);
@@ -55,7 +55,8 @@ TStyle* Style( Int_t fl ){
   
   //set axis label and title text sizes
   //myStyle->SetLabelFont(42,"xyz");
-  myStyle->SetLabelSize(0.05,"xyz");
+  myStyle->SetLabelSize(0.05,"xy");
+  myStyle->SetLabelSize(0.04,"z");
   myStyle->SetLabelOffset(0.01,"xyz");
   //myStyle->SetTitleFont(42,"xyz");
   myStyle->SetTitleSize(0.06,"xyz");
@@ -74,7 +75,7 @@ TStyle* Style( Int_t fl ){
 
   //set line widths
   myStyle->SetFrameLineWidth(1);
-  myStyle->SetFuncWidth(1);
+  myStyle->SetFuncWidth(2);
   myStyle->SetHistLineWidth(1);
   myStyle->SetFuncStyle(2);
   
@@ -97,7 +98,7 @@ TStyle* Style( Int_t fl ){
   
   //marker settings
   myStyle->SetMarkerStyle(20);
-  myStyle->SetMarkerSize(0.7);
+  myStyle->SetMarkerSize(0.4);
   myStyle->SetLineWidth(1);
 
   //done

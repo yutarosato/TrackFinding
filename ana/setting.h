@@ -2,6 +2,7 @@
 #define SETTING_H
 
 #include "../Util/Style.h"
+#include "../Util/Hough.h"
 
 #include <iostream>
 #include <iomanip>
@@ -123,13 +124,11 @@ Int_t set_readbranch_decay( TChain* tree ){
   return 0;
 }
 
-/*
-Int_t set_tree( TTree* tree ){
-  tree = new TTree("slit128A","slit128A");
-  tree->Branch( "event",  &t_event,  "event/I" );
-  return 0;
+Double_t phi_uk(Double_t y, Double_t x){ // 0~phi~2pi : this definition is used in Ueno-san's codes
+  Double_t phi = TMath::ATan2(y,x);
+  if( phi<0 ) phi += 2*TMath::Pi();
+  return phi;
 }
-*/
 
 
 
