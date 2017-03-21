@@ -74,14 +74,6 @@ Int_t main( Int_t argc, Char_t** argv ){
     ResetObject();
     tree_body ->GetEntry(ievt);
     tree_decay->GetEntry(ievt);
-    
-    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    // Make Frame
-    can->cd(1);
-    gPad->DrawFrame(-350,-350,350,350, Form("EvtNo:%d, E(e+)=%.1f MeV, P(e+) = (%.1f, %.1f, %.1f);X [mm];Y [mm]",td_eventNum,td_DtEnergy[1],td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]));
-    g_orbit->Draw("Lsame");
-    can->cd(2);
-    gPad->DrawFrame(0.0,-250,2.0*TMath::Pi(),250, Form("EvtNo:%d, E(e+)=%.1f MeV;#phi [rad];Z [mm]",td_eventNum,td_DtEnergy[1]));
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Muon Decay Information
@@ -106,8 +98,13 @@ Int_t main( Int_t argc, Char_t** argv ){
     
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Hits
-    TGraph* g_hitpoint_xy     = new TGraph(); g_hitpoint_xy    ->SetMarkerColor(3);
-    TGraph* g_hitpoint_phiz   = new TGraph(); g_hitpoint_phiz  ->SetMarkerColor(3);
+    TGraph* g_hitpoint_xy   = new TGraph();
+    TGraph* g_hitpoint_phiz = new TGraph();
+    g_hitpoint_xy  ->SetMarkerColor(3);
+    g_hitpoint_phiz->SetMarkerColor(3);
+    g_hitpoint_xy  ->SetMarkerStyle(24);
+    g_hitpoint_phiz->SetMarkerStyle(24);
+
     Int_t cnt_hit=0;
     std::cout << "Nvec = " << tb_pos_x->size() << std::endl;
     for( Int_t ihit=0; ihit<tb_pos_x->size(); ihit++ ){ // START HIT-LOOP
@@ -154,38 +151,50 @@ Int_t main( Int_t argc, Char_t** argv ){
     for( Int_t ivec=0; ivec<v_residual_PhiZ.size(); ivec++ ) hist_resi_phiz->Fill( v_residual_PhiZ.at(ivec) );
 
     // select the hit-points close to the Hough-Fit-line
+    TGraph* g_hitpoint_phiz_close  = new TGraph();
+    TGraph* g_digihit_phiz         = new TGraph();
+    g_hitpoint_phiz_close->SetMarkerColor(3);
+    g_digihit_phiz       ->SetMarkerColor(3);
+    
     for( Int_t ivec=0; ivec<v_residual_PhiZ.size(); ivec++ ){
       if( fabs(v_residual_PhiZ.at(ivec) - hist_resi_phiz->GetMean()) <= 3*(hist_resi_phiz->GetRMS()) ){
 	v_closeZ.push_back  ( v_Z.at  (ivec) );
 	v_closePhi.push_back( v_Phi.at(ivec) );
+	g_hitpoint_phiz_close->SetPoint( g_hitpoint_phiz_close->GetN(), v_Phi.at(ivec),            v_Z.at(ivec) );
+	g_digihit_phiz       ->SetPoint( g_digihit_phiz       ->GetN(), GetVaneID(v_Phi.at(ivec)), v_Z.at(ivec) );
       }
     }
     std::cout << "fl_angle = " << fl_angle << std::endl;
 
-
-    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    // Digitize
-    
-    
-
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Draw
+
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // Make Frame
     can->cd(1);
+    gPad->DrawFrame(-350,-350,350,350, Form("EvtNo:%d, E(e+)=%.1f MeV, P(e+) = (%.1f, %.1f, %.1f);X [mm];Y [mm]",td_eventNum,td_DtEnergy[1],td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]));
+    g_orbit      ->Draw("Lsame");
     g_decpoint_xy->Draw("Psame");
     g_decvec_xy  ->Draw();
     g_hitpoint_xy->Draw("Psame");
 
     can->cd(2);
-    g_decpoint_phiz->Draw("Psame");
-    g_decvec_phiz  ->Draw();
-    g_hitpoint_phiz->Draw("Psame");
-    func_hough_phiz->Draw("same");
+    gPad                 ->DrawFrame(0.0,-250,2.0*TMath::Pi(),250, Form("EvtNo:%d, E(e+)=%.1f MeV;#phi [rad];Z [mm]",td_eventNum,td_DtEnergy[1]));
+    g_decpoint_phiz      ->Draw("Psame");
+    g_decvec_phiz        ->Draw();
+    g_hitpoint_phiz      ->Draw("Psame");
+    func_hough_phiz      ->Draw("same");
+    g_hitpoint_phiz_close->Draw("Psame");
 
     can->cd(3);
     hist_hough_phiz->Draw("COLZ");
 
     can->cd(4);
     hist_resi_phiz ->Draw();
+
+    can->cd(5);
+    gPad                 ->DrawFrame(0.0,-250,n_vane,250, Form("EvtNo:%d, E(e+)=%.1f MeV;Vane-ID;Z [mm]",td_eventNum,td_DtEnergy[1]));
+    g_digihit_phiz->Draw("Psame");
 
     can->Update();
     can->WaitPrimitive();
@@ -197,6 +206,7 @@ Int_t main( Int_t argc, Char_t** argv ){
     delete g_decvec_phiz;
     delete g_hitpoint_xy;
     delete g_hitpoint_phiz;
+    delete g_hitpoint_phiz_close;
 
     delete hist_hough_phiz;
     delete func_hough_phiz;

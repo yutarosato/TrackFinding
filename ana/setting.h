@@ -3,6 +3,7 @@
 
 #include "../Util/Style.h"
 #include "../Util/Hough.h"
+#include "../Util/Geometry.h"
 
 #include <iostream>
 #include <iomanip>
