@@ -1,0 +1,7 @@
+all                       : 10
+Nhit cut                 : 0 (0)
+Hough & angle cut (true) : 0 (0)
+Clustering cut (true) : 0 (0)
+Final (true) : 0 (0)
+
+True event (E>150MeV) :0
