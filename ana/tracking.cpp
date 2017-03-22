@@ -1,5 +1,6 @@
 #include "setting.h"
 const Int_t fl_message = 2;
+const Int_t fl_show    = 2;
 
 // Objects
 std::vector<Double_t> v_X;
@@ -52,17 +53,24 @@ Int_t main( Int_t argc, Char_t** argv ){
   TChain* tree_decay = new TChain( "ntupleDecay" );
   tree_body ->Add( infilename );
   tree_decay->Add( infilename );
-  std::cout << "[Body ] " << tree_body ->GetEntries() << " entries" << std::endl;
-  std::cout << "[Decay] " << tree_decay->GetEntries() << " entries" << std::endl;
+  std::cout << "[infile] " << infilename << " : "
+	    << tree_body ->GetEntries() << " entries(body), "
+	    << tree_decay->GetEntries() << " entries(decay)" << std::endl;
   
   set_readbranch_body ( tree_body  );
   set_readbranch_decay( tree_decay );
 
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   // Make Canvas
-  TCanvas* can = new TCanvas( "can", "can", 1200, 750 );
-  can->Divide(3,2);
-  can->Draw();
+  TCanvas* can_1evt = new TCanvas( "can_1evt", "can_1evt", 1200, 750 );
+  can_1evt->Divide(3,2);
+  can_1evt->Draw();
+  Int_t cnt_show = 0;
+
+  // Objects
+  TH1D* hist_Epos      = new TH1D( "hist_Epos",      "E_{e^{+}};E_{e^{+}} [MeV]", 50, 0, 350 );
+  TH1D* hist_Nhit      = new TH1D( "hist_Nhit",      "N_{hit};N_{hit}",           20, 0, 200 );
+  TH2D* hist_Epos_Nhit = new TH2D( "hist_Epos_Nhit", "E_{e^{+}}v.s.N_{hit};E_{e^{+}} [MeV];N_{hit}", 50, 0, 350, 20, 0, 200 );
 
   // Muon Orbit
   TArc* g_orbit = new TArc( 0, 0, 330 );
@@ -73,7 +81,7 @@ Int_t main( Int_t argc, Char_t** argv ){
   Int_t cnt_signal = 0;
   for( Int_t ievt=0; ievt<nevt; ievt++ ){ // START EVENT-LOOP
     
-    std::cout << "+++++++++++++++ ievt = " << ievt << " ++++++++++++++++++++" << std::endl;
+    if( fl_message && (cnt_show < fl_show || ievt==nevt-1) ) std::cout << "+++++++++++++++ ievt = " << ievt << " ++++++++++++++++++++" << std::endl;
     // read event
     ResetObject();
     tree_body ->GetEntry(ievt);
@@ -110,7 +118,7 @@ Int_t main( Int_t argc, Char_t** argv ){
     g_hitpoint_phiz->SetMarkerStyle(24);
 
     Int_t cnt_hit=0;
-    std::cout << "Nvec = " << tb_pos_x->size() << std::endl;
+    if( fl_message && (cnt_show < fl_show || ievt==nevt-1) ) std::cout << "Nvec = " << tb_pos_x->size() << std::endl;
     for( Int_t ihit=0; ihit<tb_pos_x->size(); ihit++ ){ // START HIT-LOOP
       if( tb_EachDepE  ->at(ihit)<=0    ) continue; // not zero energy-deposit
       if( tb_bodyStatus->at(ihit)!=0    ) continue; // injection hit-point (veto outgoing hit-point)
@@ -127,8 +135,13 @@ Int_t main( Int_t argc, Char_t** argv ){
       
       cnt_hit++;
     } // END HIT-LOOP
-    std::cout << "Nhit  = " << cnt_hit        << std::endl;
-    std::cout << "E(e+) = " << td_DtEnergy[1] << " MeV" << std::endl;
+    if( fl_message && (cnt_show < fl_show || ievt==nevt-1) ){
+      std::cout << "Nhit  = " << cnt_hit        << std::endl;
+      std::cout << "E(e+) = " << td_DtEnergy[1] << " MeV" << std::endl;
+    }
+    hist_Epos     ->Fill( td_DtEnergy[1] );
+    hist_Nhit     ->Fill( cnt_hit        );
+    hist_Epos_Nhit->Fill( td_DtEnergy[1], cnt_hit );
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     if( td_DtEnergy[1] > 150 && cnt_hit > 0 ) cnt_signal++;
@@ -179,7 +192,7 @@ Int_t main( Int_t argc, Char_t** argv ){
       g_digihit_phiz_close->SetPoint( g_digihit_phiz_close->GetN(), GetVaneID(v_closePhi.at(ivec)), v_closeZ.at(ivec) );
     }
 
-    std::cout << "fl_angle = " << fl_angle << std::endl;
+    if( fl_message && (cnt_show < fl_show || ievt==nevt-1) ) std::cout << "fl_angle = " << fl_angle << std::endl;
 
     // Sorting
     std::multimap<Double_t,Double_t> tMap;
@@ -198,54 +211,76 @@ Int_t main( Int_t argc, Char_t** argv ){
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Draw
-    can->cd(1);
-    gPad->DrawFrame(-350,-350,350,350, Form("EvtNo:%d, E(e+)=%.1f MeV, P(e+) = (%.1f, %.1f, %.1f);X [mm];Y [mm]",td_eventNum,td_DtEnergy[1],td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]));
-    g_orbit      ->Draw("Lsame");
-    g_decpoint_xy->Draw("Psame");
-    g_decvec_xy  ->Draw();
-    g_hitpoint_xy->Draw("Psame");
-
-    can->cd(2);
-    gPad                 ->DrawFrame(0.0,-250,2.0*TMath::Pi(),250, Form("EvtNo:%d, E(e+)=%.1f MeV;#phi [rad];Z [mm]",td_eventNum,td_DtEnergy[1]));
-    g_decpoint_phiz      ->Draw("Psame");
-    g_decvec_phiz        ->Draw();
-    g_hitpoint_phiz      ->Draw("Psame");
-    func_hough_phiz      ->Draw("same");
-    g_hitpoint_phiz_close->Draw("Psame");
-
-    can->cd(3);
-    hist_hough_phiz->Draw("COLZ");
-
-    can->cd(4);
-    hist_resi_phiz ->Draw();
-
-    can->cd(5);
-    gPad                 ->DrawFrame(0.0,-250,n_vane,250, Form("EvtNo:%d, E(e+)=%.1f MeV;Vane-ID;Z [mm]",td_eventNum,td_DtEnergy[1]));
-    g_digihit_phiz      ->Draw("Psame");
-    g_digihit_phiz_close->Draw("Psame");
-
-    can->Update();
-    can->WaitPrimitive();
+    if( cnt_show < fl_show || ievt==nevt-1 ){
+      can_1evt->cd(1);
+      gPad->DrawFrame(-350,-350,350,350, Form("EvtNo:%d, E(e+)=%.1f MeV, P(e+) = (%.1f, %.1f, %.1f);X [mm];Y [mm]",td_eventNum,td_DtEnergy[1],td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]));
+      g_orbit      ->Draw("Lsame");
+      g_decpoint_xy->Draw("Psame");
+      g_decvec_xy  ->Draw();
+      g_hitpoint_xy->Draw("Psame");
+      
+      can_1evt->cd(2);
+      gPad                 ->DrawFrame(0.0,-250,2.0*TMath::Pi(),250, Form("EvtNo:%d, E(e+)=%.1f MeV;#phi [rad];Z [mm]",td_eventNum,td_DtEnergy[1]));
+      g_decpoint_phiz      ->Draw("Psame");
+      g_decvec_phiz        ->Draw();
+      g_hitpoint_phiz      ->Draw("Psame");
+      func_hough_phiz      ->Draw("same");
+      g_hitpoint_phiz_close->Draw("Psame");
+      
+      can_1evt->cd(3);
+      hist_hough_phiz->Draw("COLZ");
+      
+      can_1evt->cd(4);
+      hist_resi_phiz ->Draw();
+      
+      can_1evt->cd(5);
+      gPad                 ->DrawFrame(0.0,-250,n_vane,250, Form("EvtNo:%d, E(e+)=%.1f MeV;Vane-ID;Z [mm]",td_eventNum,td_DtEnergy[1]));
+      g_digihit_phiz      ->Draw("Psame");
+      g_digihit_phiz_close->Draw("Psame");
+      
+      can_1evt->Update();
+      can_1evt->WaitPrimitive();
+      cnt_show++;
+    }
 
     // Delete
-    delete g_decpoint_xy;
-    delete g_decpoint_phiz;
-    delete g_decvec_xy;
-    delete g_decvec_phiz;
-    delete g_hitpoint_xy;
-    delete g_hitpoint_phiz;
-    delete g_hitpoint_phiz_close;
-
-    delete hist_hough_phiz;
-    delete func_hough_phiz;
-    delete hist_resi_phiz;
+    if( ievt!=nevt-1 ){
+      delete g_decpoint_xy;
+      delete g_decpoint_phiz;
+      delete g_decvec_xy;
+      delete g_decvec_phiz;
+      delete g_hitpoint_xy;
+      delete g_hitpoint_phiz;
+      delete g_hitpoint_phiz_close;
+      delete g_digihit_phiz;
+      delete g_digihit_phiz_close;
+      
+      delete hist_hough_phiz;
+      delete func_hough_phiz;
+      delete hist_resi_phiz;
+    }
     
   } // END EVENT-LOOP
+
+  TCanvas* can = new TCanvas( "can", "can", 800, 750 );
+  can->Divide(2,2);
+  can->Draw();
+  can->cd(1);
+  hist_Epos->Draw();
+  can->cd(2);
+  hist_Nhit->Draw();
+  can->cd(3);
+  hist_Epos_Nhit->Draw("COLZ");
+  can->Update();
   
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   
   std::cout << "finish" << std::endl;
   if( !gROOT->IsBatch() ) app.Run();
+
+  delete tree_body;
+  delete tree_decay;
+  delete g_orbit;
   
   return 0;
   
