@@ -9,6 +9,8 @@ std::vector<Double_t> v_Z;
 std::vector<Double_t> v_residual_PhiZ;
 std::vector<Double_t> v_closePhi;
 std::vector<Double_t> v_closeZ;
+std::vector<Double_t> v_VaneID;
+std::vector<Double_t> v_closeVaneID;
 std::vector<Double_t> h_X;
 std::vector<Double_t> h_Y;
 std::vector<Double_t> h_Phi;
@@ -22,6 +24,8 @@ void ResetObject(){
   v_residual_PhiZ.clear();
   v_closePhi.clear();
   v_closeZ.clear();
+  v_VaneID.clear();
+  v_closeVaneID.clear();
   h_X.clear();
   h_Y.clear();
   h_Phi.clear();
@@ -152,25 +156,48 @@ Int_t main( Int_t argc, Char_t** argv ){
 
     // select the hit-points close to the Hough-Fit-line
     TGraph* g_hitpoint_phiz_close  = new TGraph();
-    TGraph* g_digihit_phiz         = new TGraph();
     g_hitpoint_phiz_close->SetMarkerColor(3);
-    g_digihit_phiz       ->SetMarkerColor(3);
-    
     for( Int_t ivec=0; ivec<v_residual_PhiZ.size(); ivec++ ){
       if( fabs(v_residual_PhiZ.at(ivec) - hist_resi_phiz->GetMean()) <= 3*(hist_resi_phiz->GetRMS()) ){
 	v_closeZ.push_back  ( v_Z.at  (ivec) );
 	v_closePhi.push_back( v_Phi.at(ivec) );
 	g_hitpoint_phiz_close->SetPoint( g_hitpoint_phiz_close->GetN(), v_Phi.at(ivec),            v_Z.at(ivec) );
-	g_digihit_phiz       ->SetPoint( g_digihit_phiz       ->GetN(), GetVaneID(v_Phi.at(ivec)), v_Z.at(ivec) );
       }
     }
+
+    TGraph* g_digihit_phiz       = new TGraph();
+    TGraph* g_digihit_phiz_close = new TGraph();
+    g_digihit_phiz      ->SetMarkerStyle(24);
+    g_digihit_phiz      ->SetMarkerColor(3);
+    g_digihit_phiz_close->SetMarkerColor(3);
+    for( Int_t ivec=0; ivec<v_Phi.size();      ivec++ ){
+      v_VaneID.push_back( GetVaneID(v_Phi.at(ivec)) );
+      g_digihit_phiz->SetPoint( g_digihit_phiz->GetN(), GetVaneID(v_Phi.at(ivec)), v_Z.at(ivec) );
+    }
+    for( Int_t ivec=0; ivec<v_closePhi.size(); ivec++ ){
+      v_closeVaneID.push_back( GetVaneID(v_closePhi.at(ivec)) );
+      g_digihit_phiz_close->SetPoint( g_digihit_phiz_close->GetN(), GetVaneID(v_closePhi.at(ivec)), v_closeZ.at(ivec) );
+    }
+
     std::cout << "fl_angle = " << fl_angle << std::endl;
+
+    // Sorting
+    std::multimap<Double_t,Double_t> tMap;
+    for( Int_t ivec=0; ivec<(Int_t)v_closeVaneID.size(); ivec++ ){
+      tMap.insert( std::make_pair(v_closeVaneID.at(ivec),v_closeZ.at(ivec)) );
+    }
+    v_closeVaneID.clear();
+    v_closeZ.clear     ();
+    std::multimap<Double_t,Double_t>::iterator it = tMap.begin();
+    while( it != tMap.end() ){
+      v_closeVaneID.push_back( (*it).first  );
+      v_closeZ.push_back     ( (*it).second );
+      it++;
+    }
+    
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Draw
-
-    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    // Make Frame
     can->cd(1);
     gPad->DrawFrame(-350,-350,350,350, Form("EvtNo:%d, E(e+)=%.1f MeV, P(e+) = (%.1f, %.1f, %.1f);X [mm];Y [mm]",td_eventNum,td_DtEnergy[1],td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]));
     g_orbit      ->Draw("Lsame");
@@ -194,7 +221,8 @@ Int_t main( Int_t argc, Char_t** argv ){
 
     can->cd(5);
     gPad                 ->DrawFrame(0.0,-250,n_vane,250, Form("EvtNo:%d, E(e+)=%.1f MeV;Vane-ID;Z [mm]",td_eventNum,td_DtEnergy[1]));
-    g_digihit_phiz->Draw("Psame");
+    g_digihit_phiz      ->Draw("Psame");
+    g_digihit_phiz_close->Draw("Psame");
 
     can->Update();
     can->WaitPrimitive();
