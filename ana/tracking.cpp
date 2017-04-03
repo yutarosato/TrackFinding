@@ -74,8 +74,13 @@ Int_t main( Int_t argc, Char_t** argv ){
   can_1evt->Divide(3,2);
   can_1evt->Draw();
   Int_t cnt_show = 0;
+<<<<<<< HEAD
 
   // Objects
+=======
+ 
+   // Objects
+>>>>>>> 50e25acb9d10be83de73e26b3dce73c23e109153
   TH1D*   hist_Epos           = new TH1D( "hist_Epos",      "E_{e^{+}};E_{e^{+}} [MeV]", 50, 0, 350 );
   TH1D*   hist_Nhit           = new TH1D( "hist_Nhit",      "N_{hit};N_{hit}",           20, 0, 200 );
   TH2D*   hist_Epos_Nhit      = new TH2D( "hist_Epos_Nhit", "E_{e^{+}}v.s.N_{hit};E_{e^{+}} [MeV];N_{hit}", 50, 0, 350, 20, 0, 200 );
@@ -143,10 +148,19 @@ Int_t main( Int_t argc, Char_t** argv ){
       if( tb_bodyStatus->at(ihit)!=0    ) continue; // injection hit-point (veto outgoing hit-point)
       if( tb_bodyTyp   ->at(ihit)<= 100 ) continue; // hit on vane
       if( tb_bodyTyp   ->at(ihit)>=1000 ) continue; // hit on vane
+<<<<<<< HEAD
+=======
+
+>>>>>>> 50e25acb9d10be83de73e26b3dce73c23e109153
       g_hitpoint_xy      ->SetPoint( g_hitpoint_xy      ->GetN(), tb_pos_x->at(ihit),                            tb_pos_y->at(ihit) );
       g_hitpoint_phiz    ->SetPoint( g_hitpoint_phiz    ->GetN(), phi_uk(tb_pos_y->at(ihit),tb_pos_x->at(ihit)), tb_pos_z->at(ihit) );
       g_hitpoint_xy_int  ->SetPoint( g_hitpoint_xy_int  ->GetN(), tb_pos_x->at(ihit),                            tb_pos_y->at(ihit) );
       g_hitpoint_phiz_int->SetPoint( g_hitpoint_phiz_int->GetN(), phi_uk(tb_pos_y->at(ihit),tb_pos_x->at(ihit)), tb_pos_z->at(ihit) );
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 50e25acb9d10be83de73e26b3dce73c23e109153
       if( tb_pID->at(ihit)!=2 ){
 	g_hitpoint_xy_other  ->SetPoint( g_hitpoint_xy  ->GetN(), tb_pos_x->at(ihit),                            tb_pos_y->at(ihit) );
 	g_hitpoint_phiz_other->SetPoint( g_hitpoint_phiz->GetN(), phi_uk(tb_pos_y->at(ihit),tb_pos_x->at(ihit)), tb_pos_z->at(ihit) );
@@ -402,6 +416,147 @@ Int_t main( Int_t argc, Char_t** argv ){
       }
     }
 
+   if( fl_message > 1 && (cnt_show < fl_show || ievt==nevt-1) ){
+      for( Int_t ivec=0; ivec<v_closePhi.size(); ivec++ ){
+	std::cout << "                  "
+		  << std::setw(3) << std::right << ivec << " : (Z,phi,ID) = ("
+		  << std::setw(10) << std::right << Form("%.7f",v_closeZ.at     (ivec)) << ","
+		  << std::setw(10) << std::right << Form("%.7f",v_closePhi.at   (ivec)) << ","
+		  << std::setw(4)  << std::right << Form("%d",  v_closeVaneID.at(ivec)) << ")"
+		  << std::endl;
+      }
+    }
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // clustering
+    Int_t group [100] = {0};
+    Int_t groupS[100] = {0};
+    Int_t groupE[100] = {0};
+    Int_t groupnum  = 0;
+    Int_t groupflag = 0;
+    
+    for( Int_t ii=(Int_t)v_closeVaneID[0]; ii<=(Int_t)v_closeVaneID[v_closeVaneID.size()-1];ii++ ){
+      //std::cout << "        ii = " << ii << ", groupnum = " << groupnum << ", group[] = " << group[groupnum] << ", groupflag = " << groupflag << std::endl;
+      if( tMap.count(ii)!=1 ){ // no hit or multiple hits in one vane
+	if( groupflag==0 && ii>(Int_t)v_closeVaneID[0] ) groupE[groupnum]=ii-1;
+	groupflag++;
+      }else if( tMap.count(ii)==1 ){ // move to next group
+	if( groupflag>0 ){
+	  if( group[groupnum]>0 ) groupnum++;
+	  //std::cout << "New Group : " << groupnum << std::endl;
+	  if( group[groupnum]==0 ){
+	    groupS[groupnum]=ii;
+	    group[groupnum]++;
+	  }
+	}else{ // added to current group
+	  if(group[groupnum]==0) groupS[groupnum]=ii;
+	  group[groupnum]++;
+	  if( ii==(Int_t)v_closeVaneID[v_closeVaneID.size()-1]) groupE[groupnum]=ii;
+	}
+	groupflag=0;
+      }else{
+	group[groupnum]++;
+      }
+    }
+    
+    //-get group with maximum number
+    Int_t tmpmax=0;
+    Int_t maxgroup=0;
+    if( group[0]>0 ){
+      for( Int_t ii=0; ii<groupnum+1;ii++ ){
+	if( tmpmax<group[ii] ){
+	  tmpmax=group[ii];
+	  maxgroup=ii;
+	}
+      }
+      //std::cout << "group-ID : " << maxgroup << ", #vane : " << tmpmax << std::endl;
+    }
+    
+    //-cut group with small number & clustering
+    //std::vector<Double_t> clsVaneNum;
+    //std::vector<Double_t> clsZ;
+    if( tmpmax>1 ){
+      for( Int_t ii=0; ii<(Int_t)v_closeVaneID.size(); ii++ ){
+	if( v_closeVaneID[ii]>=groupS[maxgroup]&&
+	    v_closeVaneID[ii]<=groupE[maxgroup]){
+	  v_clusterVaneID.push_back(v_closeVaneID[ii]);
+	  v_clusterZ.push_back(v_closeZ[ii]);
+	}
+      }
+
+      //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      //-steering
+      //-back
+      Double_t hashi,mae,hashiY,maeY,exval;
+      Double_t subt,minsub,minsubY;
+      Int_t overii[1000*v_VaneID.size()];
+      Int_t overiicnt=0;
+
+      for(Int_t ii=0;ii<(Int_t)v_VaneID.size()*1000;ii++) overii[ii]=v_VaneID.size();
+      Int_t mplflag=0;
+      while(1){
+	minsub = 1000;
+	hashi  = v_clusterVaneID[v_clusterVaneID.size()-1];
+	hashiY = v_clusterZ[v_clusterVaneID.size()-1];
+	maeY   = v_clusterZ[v_clusterVaneID.size()-2];
+	exval  = hashiY + hashiY - maeY;
+	//std::cout << "hashi = " << hashi << std::endl;
+	if( hashi==n_vane-1 ) hashi=hashi-n_vane;
+	for( Int_t ii=0; ii<(Int_t)v_VaneID.size(); ii++ ){
+	  //std::cout << "ii = " << ii << " : " << v_VaneID[ii] << std::endl;
+	  if( v_VaneID[ii] == hashi+1 ){
+	    //std::cout << "   hashi+1 = " << v_VaneID[ii] << std::endl;
+	    subt = TMath::Abs(exval-v_Z[ii]);
+	    if(subt<minsub){
+	      //std::cout << "         " << subt << " < " << minsub << ", overiicnt = " << overiicnt << std::endl;
+	      minsub=subt;
+	      minsubY=v_Z[ii];
+	      for(Int_t jj=0; jj<overiicnt;jj++){
+		if(overii[jj]==ii)minsub=1000;
+	      }
+	      overii[overiicnt]=ii;
+	      overiicnt++;
+	    }
+	  }
+	}
+	//std::cout << "minsub = " << minsub << std::endl;
+	if( minsub>10 ) break;
+	v_clusterVaneID.push_back(hashi+1);
+	v_clusterZ.push_back(minsubY);
+      }
+      for( Int_t ii=0;ii<(Int_t)v_VaneID.size()*1000;ii++ ) overii[ii]=v_VaneID.size();
+      overiicnt=0;
+      //std::cout << "END BACK" << std::endl;
+      //////
+
+      //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      //-front
+      while(1){
+	minsub = 1000;
+	hashi  = v_clusterVaneID[0];
+	hashiY = v_clusterZ[0];
+	maeY   = v_clusterZ[1];
+	exval  = hashiY + hashiY - maeY;
+	if( hashi==0 ) hashi=hashi+n_vane;
+	for( Int_t ii=0;ii<(Int_t)v_VaneID.size();ii++ ){
+	  if( v_VaneID[ii]==hashi-1 ){
+	    subt=TMath::Abs(exval-v_Z[ii]);
+	    if( subt<minsub ){
+	      minsub=subt;
+	      minsubY=v_Z[ii];
+	      for(Int_t jj=0; jj<overiicnt;jj++){
+		if( overii[jj]==ii ) minsub=1000;
+	      }
+	      overii[overiicnt]=ii;
+	      overiicnt++;
+	    }
+	  }
+	}
+	if( minsub>10 ) break;
+	v_clusterVaneID.insert(v_clusterVaneID.begin(),hashi-1);
+	v_clusterZ.insert(v_clusterZ.begin(),minsubY);
+      }
+    }
+
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // judgement of success or false
     std::map<Double_t,Int_t> map_time_sort;
@@ -413,8 +568,18 @@ Int_t main( Int_t argc, Char_t** argv ){
 
     Int_t tmp_cnt = 0;
     for( std::map<Double_t,Int_t>::iterator itime = map_time_sort.begin(); itime != map_time_sort.end(); itime++ ){
+<<<<<<< HEAD
       for( Int_t icls=0;icls<(Int_t)v_clusterZ.size();icls++){ // to be checked . fabs is need ?? tmppppp
 	if( v_VaneID[itime->second]==v_clusterVaneID[icls] && v_Z[itime->second]==v_clusterZ[icls] ) fl_success[tmp_cnt]++; // check if how many hits are detected from hits(1st~3rd)
+=======
+<<<<<<< HEAD
+      for( Int_t icls=0;icls<(Int_t)v_clusterZ.size();icls++){ // to be checked . fabs is need ?? tmppppp
+	if( v_VaneID[itime->second]==v_clusterVaneID[icls] && v_Z[itime->second]==v_clusterZ[icls] ) fl_success[tmp_cnt]++; // check if how many hits are detected from hits(1st~3rd)
+=======
+      for( Int_t ihit=0;ihit<(Int_t)v_closeZ.size();ihit++){ // to be checked . fabs is need ?? tmppppp
+	if( v_VaneID[itime->second]==v_closeVaneID[ihit] && v_Z[itime->second]==v_closeZ[ihit] ) fl_success[tmp_cnt]++; // check if how many hits are detected from hits(1st~3rd)
+>>>>>>> ab6755bb902f2c057af54c8caa2edc7ed0a6b95e
+>>>>>>> 50e25acb9d10be83de73e26b3dce73c23e109153
       }
       tmp_cnt++;
       if( tmp_cnt==n_primary_hit ) break;
