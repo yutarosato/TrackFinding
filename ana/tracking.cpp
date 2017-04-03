@@ -75,7 +75,8 @@ Int_t main( Int_t argc, Char_t** argv ){
   TH1D* hist_Epos      = new TH1D( "hist_Epos",      "E_{e^{+}};E_{e^{+}} [MeV]", 50, 0, 350 );
   TH1D* hist_Nhit      = new TH1D( "hist_Nhit",      "N_{hit};N_{hit}",           20, 0, 200 );
   TH2D* hist_Epos_Nhit = new TH2D( "hist_Epos_Nhit", "E_{e^{+}}v.s.N_{hit};E_{e^{+}} [MeV];N_{hit}", 50, 0, 350, 20, 0, 200 );
-  TH1D* hist_eff       = new TH1D( "hist_eff",       "Rec. Eff.;E_{e^{+}} [MeV]; Rec. Eff. [%]", 50, 0, 350 );
+  TH1D* hist_Nrec      = new TH1D( "hist_Nrec",      "Rec. Evt;E_{e^{+}} [MeV]; Rec. Events", 50, 0, 350 );
+  TH1D* hist_eff       = new TH1D( "hist_eff",       "Rec. Eff.;E_{e^{+}} [MeV]; Rec. Eff.",  50, 0, 350 );
 
   // Muon Orbit
   TArc* g_orbit = new TArc( 0, 0, 330 );
@@ -263,8 +264,8 @@ Int_t main( Int_t argc, Char_t** argv ){
     }
 
     const Int_t index_success = 3;
-    if( fl_success_integral[index_success-1]==index_success ){
-      // OK
+    if( fl_success_integral[index_success-1]==index_success ){// success
+      hist_Nrec->Fill( td_DtEnergy[1] );
     }
     //if( fl_success_integral[0] ){
     //
@@ -327,17 +328,26 @@ Int_t main( Int_t argc, Char_t** argv ){
     
   } // END EVENT-LOOP
 
+  for( Int_t ibin=0; ibin<hist_eff->GetNbinsX(); ibin++ ){
+    Double_t rec_eff  = ( hist_Epos->GetBinContent(ibin+1) ? hist_Nrec->GetBinContent(ibin+1)/hist_Epos->GetBinContent(ibin+1) : 0.0 );
+    Double_t rec_effE = ( hist_Nrec->GetBinContent(ibin+1) ? rec_eff*sqrt((1-rec_eff)/hist_Nrec->GetBinContent(ibin+1))        : 0.0 );
+    hist_eff->SetBinContent( ibin+1, rec_eff  );
+    hist_eff->SetBinError  ( ibin+1, rec_effE );
+  }
+
   TCanvas* can = new TCanvas( "can", "can", 800, 750 );
   can->Divide(2,2);
   can->Draw();
   can->cd(1);
   hist_Epos->Draw();
+  hist_Nrec->Draw("same");
   can->cd(2);
   hist_Nhit->Draw();
   can->cd(3);
   hist_Epos_Nhit->Draw("COLZ");
+  can->cd(4);
+  hist_eff->Draw();
   can->Update();
-
 
   
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
