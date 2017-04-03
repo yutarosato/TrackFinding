@@ -48,6 +48,6 @@
 #include <TMatrixD.h>
 #include <TMatrixDSym.h>
 
-const Int_t n_vane = 40;
+const Int_t n_vane = 48;
 
 #endif
