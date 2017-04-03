@@ -7,6 +7,8 @@ std::vector<Double_t> v_X;
 std::vector<Double_t> v_Y;
 std::vector<Double_t> v_Phi;
 std::vector<Double_t> v_Z;
+std::vector<Double_t> v_gT;
+std::vector<Double_t> v_pT;
 std::vector<Double_t> v_residual_PhiZ;
 std::vector<Double_t> v_closePhi;
 std::vector<Double_t> v_closeZ;
@@ -22,6 +24,8 @@ void ResetObject(){
   v_Y.clear();
   v_Phi.clear();
   v_Z.clear();
+  v_gT.clear(); // global time
+  v_pT.clear(); // proper time
   v_residual_PhiZ.clear();
   v_closePhi.clear();
   v_closeZ.clear();
@@ -71,6 +75,7 @@ Int_t main( Int_t argc, Char_t** argv ){
   TH1D* hist_Epos      = new TH1D( "hist_Epos",      "E_{e^{+}};E_{e^{+}} [MeV]", 50, 0, 350 );
   TH1D* hist_Nhit      = new TH1D( "hist_Nhit",      "N_{hit};N_{hit}",           20, 0, 200 );
   TH2D* hist_Epos_Nhit = new TH2D( "hist_Epos_Nhit", "E_{e^{+}}v.s.N_{hit};E_{e^{+}} [MeV];N_{hit}", 50, 0, 350, 20, 0, 200 );
+  TH1D* hist_eff       = new TH1D( "hist_eff",       "Rec. Eff.;E_{e^{+}} [MeV]; Rec. Eff. [%]", 50, 0, 350 );
 
   // Muon Orbit
   TArc* g_orbit = new TArc( 0, 0, 330 );
@@ -110,12 +115,20 @@ Int_t main( Int_t argc, Char_t** argv ){
     
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Hits
-    TGraph* g_hitpoint_xy   = new TGraph();
-    TGraph* g_hitpoint_phiz = new TGraph();
+    TGraph* g_hitpoint_xy         = new TGraph();
+    TGraph* g_hitpoint_phiz       = new TGraph();
+    TGraph* g_hitpoint_xy_other   = new TGraph();
+    TGraph* g_hitpoint_phiz_other = new TGraph();
     g_hitpoint_xy  ->SetMarkerColor(3);
     g_hitpoint_phiz->SetMarkerColor(3);
     g_hitpoint_xy  ->SetMarkerStyle(24);
     g_hitpoint_phiz->SetMarkerStyle(24);
+    g_hitpoint_xy_other  ->SetMarkerColor(4);
+    g_hitpoint_phiz_other->SetMarkerColor(4);
+    g_hitpoint_xy_other  ->SetMarkerStyle(24);
+    g_hitpoint_phiz_other->SetMarkerStyle(24);
+    g_hitpoint_xy_other  ->SetLineWidth(2);
+    g_hitpoint_phiz_other->SetLineWidth(2);
 
     Int_t cnt_hit=0;
     if( fl_message && (cnt_show < fl_show || ievt==nevt-1) ) std::cout << "Nvec = " << tb_pos_x->size() << std::endl;
@@ -126,14 +139,31 @@ Int_t main( Int_t argc, Char_t** argv ){
       if( tb_bodyTyp   ->at(ihit)>=1000 ) continue; // hit on vane
       g_hitpoint_xy  ->SetPoint( g_hitpoint_xy  ->GetN(), tb_pos_x->at(ihit),                            tb_pos_y->at(ihit) );
       g_hitpoint_phiz->SetPoint( g_hitpoint_phiz->GetN(), phi_uk(tb_pos_y->at(ihit),tb_pos_x->at(ihit)), tb_pos_z->at(ihit) );
-
+      if( tb_pID->at(ihit)!=2 ){
+	g_hitpoint_xy_other  ->SetPoint( g_hitpoint_xy  ->GetN(), tb_pos_x->at(ihit),                            tb_pos_y->at(ihit) );
+	g_hitpoint_phiz_other->SetPoint( g_hitpoint_phiz->GetN(), phi_uk(tb_pos_y->at(ihit),tb_pos_x->at(ihit)), tb_pos_z->at(ihit) );
+      }
+      
       // input to vector-objects
       v_X.push_back  ( tb_pos_x->at(ihit)                            );
       v_Y.push_back  ( tb_pos_y->at(ihit)                            );
       v_Z.push_back  ( tb_pos_z->at(ihit)                            );
+      v_gT.push_back ( tb_gtime->at(ihit)                            );
+      v_pT.push_back ( tb_ptime->at(ihit)                            );
       v_Phi.push_back( phi_uk(tb_pos_y->at(ihit),tb_pos_x->at(ihit)) );
       
       cnt_hit++;
+      if( fl_message > 1 && (cnt_show < fl_show || ievt==nevt-1) ) std::cout << "              "
+									     << std::setw(3) << std::right << cnt_hit << " : pID = "
+									     << tb_pID->at(ihit)   << ", (x,y,z) = ("
+									     << std::setw(10) << std::right << Form("%.3f",tb_pos_x->at(ihit)) << ", "
+									     << std::setw(10) << std::right << Form("%.3f",tb_pos_y->at(ihit)) << ", "
+									     << std::setw(10) << std::right << Form("%.3f",tb_pos_z->at(ihit)) << ", phi = "
+									     << std::setw(10) << std::right << Form("%.5f",phi_uk(tb_pos_y->at(ihit),tb_pos_x->at(ihit))) << ", Edep = "
+									     << std::setw(10) << std::right << Form("%.7f",tb_EachDepE->at(ihit))                         << ", t(proper) = "
+									     << std::setw(10) << std::right << Form("%.7f",tb_ptime->at(ihit))    << ", t(global) = "
+									     << std::setw(10) << std::right << Form("%.7f",tb_gtime->at(ihit))
+									     << std::endl;
     } // END HIT-LOOP
     if( fl_message && (cnt_show < fl_show || ievt==nevt-1) ){
       std::cout << "Nhit  = " << cnt_hit        << std::endl;
@@ -207,7 +237,38 @@ Int_t main( Int_t argc, Char_t** argv ){
       v_closeZ.push_back     ( (*it).second );
       it++;
     }
+
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // judgement of success or false
+    std::map<Double_t,Int_t> map_time_sort;
+    for( Int_t ihit=0; ihit<(int)v_Z.size(); ihit++ ) map_time_sort.insert( std::pair<Double_t,Int_t>(v_gT.at(ihit), ihit) );
+
+    const Int_t n_primary_hit = 10;
+    Int_t fl_success[n_primary_hit] = {0};
     
+
+    Int_t tmp_cnt = 0;
+    for( std::map<Double_t,Int_t>::iterator itime = map_time_sort.begin(); itime != map_time_sort.end(); itime++ ){
+      for( Int_t ihit=0;ihit<(Int_t)v_closeZ.size();ihit++){ // to be checked . fabs is need ?? tmppppp
+	if( v_VaneID[itime->second]==v_closeVaneID[ihit] && v_Z[itime->second]==v_closeZ[ihit] ) fl_success[tmp_cnt]++; // check if how many hits are detected from hits(1st~3rd)
+      }
+      tmp_cnt++;
+      if( tmp_cnt==n_primary_hit ) break;
+    }
+
+    Int_t fl_success_integral[n_primary_hit] = {0};
+    for( Int_t ip=0; ip<n_primary_hit; ip++ ){
+      if( ip ) fl_success_integral[ip] = fl_success_integral[ip-1] + fl_success[ip];
+      else     fl_success_integral[ip] =                             fl_success[ip];
+    }
+
+    const Int_t index_success = 3;
+    if( fl_success_integral[index_success-1]==index_success ){
+      // OK
+    }
+    //if( fl_success_integral[0] ){
+    //
+    //}
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Draw
@@ -218,6 +279,7 @@ Int_t main( Int_t argc, Char_t** argv ){
       g_decpoint_xy->Draw("Psame");
       g_decvec_xy  ->Draw();
       g_hitpoint_xy->Draw("Psame");
+      g_hitpoint_xy_other->Draw("Psame");
       
       can_1evt->cd(2);
       gPad                 ->DrawFrame(0.0,-250,2.0*TMath::Pi(),250, Form("EvtNo:%d, E(e+)=%.1f MeV;#phi [rad];Z [mm]",td_eventNum,td_DtEnergy[1]));
@@ -226,6 +288,7 @@ Int_t main( Int_t argc, Char_t** argv ){
       g_hitpoint_phiz      ->Draw("Psame");
       func_hough_phiz      ->Draw("same");
       g_hitpoint_phiz_close->Draw("Psame");
+      g_hitpoint_phiz_other->Draw("Psame");
       
       can_1evt->cd(3);
       hist_hough_phiz->Draw("COLZ");
@@ -239,7 +302,7 @@ Int_t main( Int_t argc, Char_t** argv ){
       g_digihit_phiz_close->Draw("Psame");
       
       can_1evt->Update();
-      can_1evt->WaitPrimitive();
+      if( ievt!=nevt-1 ) can_1evt->WaitPrimitive();
       cnt_show++;
     }
 
@@ -251,6 +314,8 @@ Int_t main( Int_t argc, Char_t** argv ){
       delete g_decvec_phiz;
       delete g_hitpoint_xy;
       delete g_hitpoint_phiz;
+      delete g_hitpoint_xy_other;
+      delete g_hitpoint_phiz_other;
       delete g_hitpoint_phiz_close;
       delete g_digihit_phiz;
       delete g_digihit_phiz_close;
@@ -272,6 +337,8 @@ Int_t main( Int_t argc, Char_t** argv ){
   can->cd(3);
   hist_Epos_Nhit->Draw("COLZ");
   can->Update();
+
+
   
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   
