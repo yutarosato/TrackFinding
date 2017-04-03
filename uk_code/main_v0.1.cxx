@@ -169,7 +169,6 @@ int main(int argc, char **argv){
 
       delflag=0; delflag2=0;delflag3=0; delflag4=0;
     }
-    
     trueflag=0;
     io->ReadOneEvent(i);
     io->GetParam(X,Y,Z,R,Phi,Id,Thr,Time);
@@ -373,7 +372,6 @@ int main(int argc, char **argv){
 	while(it != tMap.end()){
 	  redVaneNum.push_back((*it).first);
 	  redZ.push_back((*it).second);
-	  //std::cout << (*it).first << " : " << (*it).second << std::endl;
 	  it++;
 	}
 	/*
@@ -392,22 +390,18 @@ int main(int argc, char **argv){
 	for(int ii=0;ii<100;ii++){
 	  group[ii]=0; groupS[ii]=0; groupE[ii]=0;
 	}
-	//std::cout << "STARTTTT" << std::endl;
-	
+
 	for(int ii=(int)redVaneNum[0]; ii<=(int)redVaneNum[redVaneNum.size()-1];ii++){
-	  //std::cout << "        ii = " << ii << ", groupnum = " << groupnum << ", group[] = " << group[groupnum] << ", groupflag = " << groupflag << std::endl;
 	  if(tMap.count(ii)!=1){
 	    if(groupflag==0 && ii>(int)redVaneNum[0]){
 	      groupE[groupnum]=ii-1;
 	    }
-	    //std::cout << "End Group : " << groupS[groupnum] << " ~ " << groupE[groupnum] << std::endl;		
 	    groupflag++;
 	  }
 	  else if(tMap.count(ii)==1){
 	    if(groupflag>0){
 	      if(group[groupnum]>0)
 		groupnum++;
-	      //std::cout << "New Group : " << groupnum << std::endl;
 	      if(group[groupnum]==0){
 		groupS[groupnum]=ii;
 		group[groupnum]++;
@@ -416,12 +410,10 @@ int main(int argc, char **argv){
 	    else{
 	      if(group[groupnum]==0){
 		groupS[groupnum]=ii;
-		//std::cout << "New Group(Initial) : " << groupnum << std::endl;
 	      }
 	      group[groupnum]++;
 	      if(ii== (int)redVaneNum[redVaneNum.size()-1]){
 		groupE[groupnum]=ii;
-		//std::cout << "End Group(Final) : " << groupS[groupnum] << " ~ " << groupE[groupnum] << std::endl;		
 	      }
 	    }
 	    groupflag=0;
@@ -440,7 +432,7 @@ int main(int argc, char **argv){
 	      maxgroup=ii;
 	    }
 	  }
-	  //cout << "group-ID : " << maxgroup << ", #vane : " << tmpmax << endl;
+	  //	  cout << maxgroup << " " << tmpmax << endl;
 	}
 
 	//-cut group with small number & clustering
@@ -474,17 +466,14 @@ int main(int argc, char **argv){
 	    minsub=1000;
 	    hashi = clsVaneNum[clsVaneNum.size()-1];
 	    hashiY = clsZ[clsVaneNum.size()-1];
-	    maeY   = clsZ[clsVaneNum.size()-2];
+	    maeY = clsZ[clsVaneNum.size()-2];
 	    exval = hashiY + hashiY - maeY;
-	    cout << "hashi = " << hashi << endl;
+	    //cout << hashi << endl;
 	    if(hashi==vane-1) hashi=hashi-vane;
 	    for(int ii=0;ii<(int)VaneNum.size();ii++){
-	      std::cout << "ii = " << ii << " : " << VaneNum[ii] << std::endl;
 	      if(VaneNum[ii] == hashi+1){
-		std::cout << "   hashi+1 = " << VaneNum[ii] << std::endl;
 		subt = TMath::Abs(exval-Z[ii]);
 		if(subt<minsub){
-		  std::cout << "         " << subt << " < " << minsub << ", overiicnt = " << overiicnt << std::endl;
 		  minsub=subt;
 		  minsubY=Z[ii];
 		  for(int jj=0; jj<overiicnt;jj++){
@@ -495,7 +484,7 @@ int main(int argc, char **argv){
 		}
 	      }
 	    }
-	    cout << "minsub = " << minsub << endl;
+	    //cout << minsub << endl;
 	    if(minsub>10){
 	      // for bug file
 	      int tmpfl=0;
@@ -521,7 +510,7 @@ int main(int argc, char **argv){
 	      }
 	      else{//added in v012_3
 		hashi=hashi+1;
-		cout << "subt = " << subt << endl;
+		//cout << subt << endl;
 	      }//--added in v012_3
 	    }
 	    clsVaneNum.push_back(hashi+1);
@@ -531,8 +520,6 @@ int main(int argc, char **argv){
 	    overii[ii]=VaneNum.size();
 	  }
 	  overiicnt=0;
-	  std::cout << "END BACK" << std::endl;
-	  //abort();
 	  //-front
 	  while(1){
 	    minsub=1000;
@@ -548,7 +535,6 @@ int main(int argc, char **argv){
 		  minsub=subt;
 		  minsubY=Z[ii];
 		  for(int jj=0; jj<overiicnt;jj++){
-		    //if(overii[jj]==ii) std::cout << "                         ?????? ii = " << ii << std::endl;
 		    if(overii[jj]==ii)minsub=1000;
 		  }
 		  overii[overiicnt]=ii;
@@ -874,8 +860,7 @@ int main(int argc, char **argv){
 
     //disp->can[1]->Print("EDisp.ps");
     disp->can[1]->Update();
-    disp->can[1]->WaitPrimitive();
-    //int tmp; scanf("%d",&tmp);
+    int tmp; scanf("%d",&tmp);
 
     disp->graph[9]->Delete();
     es_evn->Delete();

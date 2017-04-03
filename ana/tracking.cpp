@@ -74,8 +74,8 @@ Int_t main( Int_t argc, Char_t** argv ){
   can_1evt->Divide(3,2);
   can_1evt->Draw();
   Int_t cnt_show = 0;
-
-  // Objects
+ 
+   // Objects
   TH1D*   hist_Epos           = new TH1D( "hist_Epos",      "E_{e^{+}};E_{e^{+}} [MeV]", 50, 0, 350 );
   TH1D*   hist_Nhit           = new TH1D( "hist_Nhit",      "N_{hit};N_{hit}",           20, 0, 200 );
   TH2D*   hist_Epos_Nhit      = new TH2D( "hist_Epos_Nhit", "E_{e^{+}}v.s.N_{hit};E_{e^{+}} [MeV];N_{hit}", 50, 0, 350, 20, 0, 200 );
@@ -143,10 +143,13 @@ Int_t main( Int_t argc, Char_t** argv ){
       if( tb_bodyStatus->at(ihit)!=0    ) continue; // injection hit-point (veto outgoing hit-point)
       if( tb_bodyTyp   ->at(ihit)<= 100 ) continue; // hit on vane
       if( tb_bodyTyp   ->at(ihit)>=1000 ) continue; // hit on vane
+
       g_hitpoint_xy      ->SetPoint( g_hitpoint_xy      ->GetN(), tb_pos_x->at(ihit),                            tb_pos_y->at(ihit) );
       g_hitpoint_phiz    ->SetPoint( g_hitpoint_phiz    ->GetN(), phi_uk(tb_pos_y->at(ihit),tb_pos_x->at(ihit)), tb_pos_z->at(ihit) );
       g_hitpoint_xy_int  ->SetPoint( g_hitpoint_xy_int  ->GetN(), tb_pos_x->at(ihit),                            tb_pos_y->at(ihit) );
       g_hitpoint_phiz_int->SetPoint( g_hitpoint_phiz_int->GetN(), phi_uk(tb_pos_y->at(ihit),tb_pos_x->at(ihit)), tb_pos_z->at(ihit) );
+
+
       if( tb_pID->at(ihit)!=2 ){
 	g_hitpoint_xy_other  ->SetPoint( g_hitpoint_xy  ->GetN(), tb_pos_x->at(ihit),                            tb_pos_y->at(ihit) );
 	g_hitpoint_phiz_other->SetPoint( g_hitpoint_phiz->GetN(), phi_uk(tb_pos_y->at(ihit),tb_pos_x->at(ihit)), tb_pos_z->at(ihit) );
@@ -261,7 +264,8 @@ Int_t main( Int_t argc, Char_t** argv ){
       v_closeZ.push_back     ( (*it).second );
       it++;
     }
-    if( fl_message > 1 && (cnt_show < fl_show || ievt==nevt-1) ){
+
+   if( fl_message > 1 && (cnt_show < fl_show || ievt==nevt-1) ){
       for( Int_t ivec=0; ivec<v_closePhi.size(); ivec++ ){
 	std::cout << "                  "
 		  << std::setw(3) << std::right << ivec << " : (Z,phi,ID) = ("
@@ -413,8 +417,13 @@ Int_t main( Int_t argc, Char_t** argv ){
 
     Int_t tmp_cnt = 0;
     for( std::map<Double_t,Int_t>::iterator itime = map_time_sort.begin(); itime != map_time_sort.end(); itime++ ){
+<<<<<<< HEAD
       for( Int_t icls=0;icls<(Int_t)v_clusterZ.size();icls++){ // to be checked . fabs is need ?? tmppppp
 	if( v_VaneID[itime->second]==v_clusterVaneID[icls] && v_Z[itime->second]==v_clusterZ[icls] ) fl_success[tmp_cnt]++; // check if how many hits are detected from hits(1st~3rd)
+=======
+      for( Int_t ihit=0;ihit<(Int_t)v_closeZ.size();ihit++){ // to be checked . fabs is need ?? tmppppp
+	if( v_VaneID[itime->second]==v_closeVaneID[ihit] && v_Z[itime->second]==v_closeZ[ihit] ) fl_success[tmp_cnt]++; // check if how many hits are detected from hits(1st~3rd)
+>>>>>>> ab6755bb902f2c057af54c8caa2edc7ed0a6b95e
       }
       tmp_cnt++;
       if( tmp_cnt==n_primary_hit ) break;

@@ -1,5 +1,6 @@
 # target
 TARGET = main
+#TARGET = main_v0.2
 
 # suffix
 ObjSuf          = .o
