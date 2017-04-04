@@ -1,10 +1,8 @@
 #include "Geometry.h"
 
 Int_t GetVaneID( Double_t f_phi ){
-  Int_t vaneID;
-  Double_t tmpVane= f_phi/(2.0*TMath::Pi()/n_vane);
-  vaneID = (Int_t)(tmpVane+0.5);
+  Int_t vaneID = (Int_t)(f_phi/(2.0*TMath::Pi()/n_vane));
   if( vaneID==n_vane ) vaneID = 0;
-  //std::cout << "f_phi = " << f_phi << ", tmpVane = " << tmpVane << " : vaneID = " << vaneID << std::endl;
+
   return vaneID;
 }
