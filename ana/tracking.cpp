@@ -1,6 +1,9 @@
 #include "setting.h"
-const Int_t fl_message = 2;
-const Int_t fl_show    = 1000;
+const Int_t    fl_message        = 2;
+const Int_t    fl_show           = 200;
+const Double_t th_show_energy    = 150.0;
+const Int_t    threshold_success = 3; // Hit definition : >= threshold_success/range_success
+const Int_t    range_success     = 6;
 
 // Objects
 std::vector<Double_t> v_X;
@@ -562,7 +565,7 @@ Int_t main( Int_t argc, Char_t** argv ){
     }
 
     Int_t fl_fin_success = 0; // final judgement of success or false
-    if( fl_success_integral[6]>3 ) fl_fin_success = 1;
+    if( fl_success_integral[range_success-1]>=threshold_success ) fl_fin_success = 1;
 
     if( fl_fin_success ){
       hist_Nrec->Fill( td_DtEnergy[1] );
@@ -576,7 +579,7 @@ Int_t main( Int_t argc, Char_t** argv ){
 
     // Draw
     //if( cnt_show < fl_show || ievt==nevt-1 ){
-    if( (cnt_show < fl_show || ievt==nevt-1) && td_DtEnergy[1] > 150 ){
+    if( (cnt_show < fl_show || ievt==nevt-1) && td_DtEnergy[1] > th_show_energy ){
       can_1evt->cd(1);
       gPad->DrawFrame(-350,-350,350,350, Form("EvtNo:%d, E(e+)=%.1f MeV, P(e+) = (%.1f, %.1f, %.1f);X [mm];Y [mm]",td_eventNum,td_DtEnergy[1],td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]));
       g_orbit      ->Draw("Lsame");
@@ -608,18 +611,21 @@ Int_t main( Int_t argc, Char_t** argv ){
 
       can_1evt->cd(6);
       can_1evt->cd(6)->Clear();
-      tex->DrawTextNDC( 0.2,0.83, Form("EvtNo = %d", td_eventNum   ) );
-      tex->DrawTextNDC( 0.2,0.73, Form("E(e+) = %.1f MeV", td_DtEnergy[1]) );
-      tex->DrawTextNDC( 0.2,0.63, Form("P(e+) = (%.1f, %.1f, %.1f) [MeV]",td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]) );
-      tex->DrawTextNDC( 0.2,0.53, Form("Nhit(  all  ) = %d",  v_X.size       ()) );
-      tex->DrawTextNDC( 0.2,0.43, Form("Nhit( close ) = %d",  v_closeX.size  ()) );
-      tex->DrawTextNDC( 0.2,0.33, Form("Nhit(cluster) = %d",  v_clusterX.size()) );
-      tex->DrawTextNDC( 0.2,0.23, Form("%s",(fl_fin_success ? "Success" : "False")) );
-      tex->DrawTextNDC( 0.2,0.13, Form("%d%d%d%d%d %d%d%d%d%d",
+      tex->DrawTextNDC( 0.2,0.80, Form("EvtNo = %d", td_eventNum   ) );
+      tex->DrawTextNDC( 0.2,0.75, Form("E(e+) = %.1f MeV", td_DtEnergy[1]) );
+      tex->DrawTextNDC( 0.2,0.70, Form("P(e+) = (%.1f, %.1f, %.1f) [MeV]",td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]) );
+      tex->DrawTextNDC( 0.2,0.65, Form("Nhit(  all  ) = %d",  v_X.size       ()) );
+      tex->DrawTextNDC( 0.2,0.60, Form("Nhit( close ) = %d",  v_closeX.size  ()) );
+      tex->DrawTextNDC( 0.2,0.55, Form("Nhit(cluster) = %d",  v_clusterX.size()) );
+      tex->DrawTextNDC( 0.2,0.50, Form("%s : %d%d%d%d%d %d%d%d%d%d",(fl_fin_success ? "Success" : "False"),
 				       fl_success[0],fl_success[1],fl_success[2],fl_success[3],fl_success[4],
 				       fl_success[5],fl_success[6],fl_success[7],fl_success[8],fl_success[9])
 			);
-      
+      if( v_X.size()>0 ) tex->DrawTextNDC( 0.2,0.40, Form("        (X,  Y,  Z,  phi,  Vane-ID)") );
+      if( v_X.size()>0 ) tex->DrawTextNDC( 0.2,0.35, Form("1st : (%4.2f, %4.2f, %4.2f, %2.2f, %3d)",v_X.at(0),v_Y.at(0),v_Z.at(0),v_Phi.at(0),v_VaneID.at(0)) );
+      if( v_X.size()>1 ) tex->DrawTextNDC( 0.2,0.30, Form("2nd : (%4.2f, %4.2f, %4.2f, %2.2f, %3d)",v_X.at(1),v_Y.at(1),v_Z.at(1),v_Phi.at(1),v_VaneID.at(1)) );
+      if( v_X.size()>2 ) tex->DrawTextNDC( 0.2,0.25, Form("3rd : (%4.2f, %4.2f, %4.2f, %2.2f, %3d)",v_X.at(2),v_Y.at(2),v_Z.at(2),v_Phi.at(2),v_VaneID.at(2)) );
+      if( v_X.size()>3 ) tex->DrawTextNDC( 0.2,0.20, Form("4th : (%4.2f, %4.2f, %4.2f, %2.2f, %3d)",v_X.at(3),v_Y.at(3),v_Z.at(3),v_Phi.at(3),v_VaneID.at(3)) );
       
       can_1evt->Update();
       if( ievt!=nevt-1 ) can_1evt->WaitPrimitive();
@@ -681,7 +687,7 @@ Int_t main( Int_t argc, Char_t** argv ){
   hist_Epos_Nhit->Draw("COLZ");
 
   can->cd(4);
-  gPad->DrawFrame( 0.0, 0.0, 350, 1.0, "Rec. Eff.;E_{e^{+}} [MeV]; Rec. Eff." );
+  gPad->DrawFrame( 0.0, 0.0, 350, 1.0, Form("Rec. Eff.(Hit definition >= %d/%d);E_{e^{+}} [MeV]; Rec. Eff.",threshold_success,range_success) );
   hist_eff->Draw("same");
 
   can->cd(5);
