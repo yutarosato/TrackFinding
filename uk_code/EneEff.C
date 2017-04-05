@@ -1,4 +1,6 @@
-void EneEff(char* name){
+//void EneEff(char* name){
+void EneEff(){
+  
   gROOT->Reset();
   //gStyle->SetOptStat(0);
   
@@ -12,9 +14,9 @@ void EneEff(char* name){
   double theta;
   
   int div=10;
-  ifstream ff(name);
+  //ifstream ff(name);
   //ifstream ff("EvSt_t5nsec.dat");
-  //ifstream ff("EvSt.dat");
+  ifstream ff("EvSt.dat");
 
   TH1F *HN = new TH1F("HN","",500,0,500);
   HN->SetFillColor(10);

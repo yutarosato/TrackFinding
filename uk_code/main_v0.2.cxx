@@ -31,6 +31,7 @@ vector<int> Id, Thr, UnitNum;
 
 //-Main
 int main(int argc, char **argv){
+  gROOT->SetBatch(true); // tmppppp
 
   //--Initialize
   disp = new Display();
@@ -516,7 +517,8 @@ int main(int argc, char **argv){
 	texEne->Draw("same");
 	disp->can[0]->Update();
 	//disp->can[0]->Print("EDisp.ps");
-	int tmp; scanf("%d",&tmp);
+	//int tmp; scanf("%d",&tmp);
+	disp->can[0]->WaitPrimitive();
 	disp->graph[3]->Delete();
       }
       

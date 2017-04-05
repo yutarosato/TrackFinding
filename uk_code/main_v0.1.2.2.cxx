@@ -33,6 +33,7 @@ vector<double> Zcp, Phicp;
 
 //-Main
 int main(int argc, char **argv){
+  gROOT->SetBatch(true); // tmppppp
 
   //--Initialize
   disp = new Display();
@@ -631,7 +632,7 @@ int main(int argc, char **argv){
       disp->can[0]->Update();
       //disp->can[0]->Print("EDisp.ps");
       //if(dE>150 && trueflag<3) disp->can[0]->Print("EDisp.ps");
-      int tmp; scanf("%d",&tmp);
+      //int tmp; scanf("%d",&tmp);
     }
     else{
       
@@ -653,7 +654,7 @@ int main(int argc, char **argv){
 
 	disp->can[0]->Update();
 	//disp->can[0]->Print("EDisp.ps");
-	int tmp; scanf("%d",&tmp);
+	//int tmp; scanf("%d",&tmp);
 	disp->graph[0]->Delete();
 	disp->graph[1]->Delete();
 	disp->graph[3]->Delete();
@@ -671,7 +672,7 @@ int main(int argc, char **argv){
 	texEne->Draw("same");
 	disp->can[0]->Update();
 	//disp->can[0]->Print("EDisp.ps");
-	int tmp; scanf("%d",&tmp);
+	//int tmp; scanf("%d",&tmp);
 	disp->graph[3]->Delete();
       }
       

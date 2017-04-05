@@ -1,9 +1,10 @@
 #include "setting.h"
-const Int_t    fl_message        = 2;
+const Int_t    fl_message        = 1;
 const Int_t    fl_show           = 200;
-const Double_t th_show_energy    = 150.0;
+const Double_t th_show_energy    = 100.0;
 const Int_t    threshold_success = 3; // Hit definition : >= threshold_success/range_success
 const Int_t    range_success     = 6;
+const Int_t    fl_batch          = 2; // 0(show), 1(batch), 2(batch&save)
 
 // Objects
 std::vector<Double_t> v_X;
@@ -70,7 +71,7 @@ void ResetObject(){
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Int_t main( Int_t argc, Char_t** argv ){
-  //gROOT->SetBatch(true);
+  gROOT->SetBatch(fl_batch);
   TStyle* sty = Style(1);
   TApplication app( "app", &argc, argv );
   if( !(app.Argc()==2) )
@@ -124,6 +125,7 @@ Int_t main( Int_t argc, Char_t** argv ){
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
   Int_t nevt       = tree_body->GetEntries();
   Int_t cnt_signal = 0;
+  if( fl_batch==2 ) can_1evt->Print("pic/tracking.pdf[");
   for( Int_t ievt=0; ievt<nevt; ievt++ ){ // START EVENT-LOOP
     
     if( fl_message && (cnt_show < fl_show || ievt==nevt-1) ) std::cout << "+++++++++++++++ ievt = " << ievt << " ++++++++++++++++++++" << std::endl;
@@ -578,8 +580,7 @@ Int_t main( Int_t argc, Char_t** argv ){
     tex->SetTextSize(0.05);
 
     // Draw
-    //if( cnt_show < fl_show || ievt==nevt-1 ){
-    if( (cnt_show < fl_show || ievt==nevt-1) && td_DtEnergy[1] > th_show_energy ){
+    if( ((cnt_show < fl_show || ievt==nevt-1) || fl_batch==2) && td_DtEnergy[1] > th_show_energy ){
       can_1evt->cd(1);
       gPad->DrawFrame(-350,-350,350,350, Form("EvtNo:%d, E(e+)=%.1f MeV, P(e+) = (%.1f, %.1f, %.1f);X [mm];Y [mm]",td_eventNum,td_DtEnergy[1],td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]));
       g_orbit      ->Draw("Lsame");
@@ -627,10 +628,14 @@ Int_t main( Int_t argc, Char_t** argv ){
       if( v_X.size()>2 ) tex->DrawTextNDC( 0.2,0.25, Form("3rd : (%4.2f, %4.2f, %4.2f, %2.2f, %3d)",v_X.at(2),v_Y.at(2),v_Z.at(2),v_Phi.at(2),v_VaneID.at(2)) );
       if( v_X.size()>3 ) tex->DrawTextNDC( 0.2,0.20, Form("4th : (%4.2f, %4.2f, %4.2f, %2.2f, %3d)",v_X.at(3),v_Y.at(3),v_Z.at(3),v_Phi.at(3),v_VaneID.at(3)) );
       
-      can_1evt->Update();
-      if( ievt!=nevt-1 ) can_1evt->WaitPrimitive();
+
+      if( ievt!=nevt-1 && !gROOT->IsBatch() ){
+	can_1evt->Update();
+	can_1evt->WaitPrimitive();
+      }
+      if( fl_batch==2 ) can_1evt->Print("pic/tracking.pdf");
+
       cnt_show++;
-      
     }
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -660,7 +665,7 @@ Int_t main( Int_t argc, Char_t** argv ){
     }
     
   } // END EVENT-LOOP
-
+  if( fl_batch==2 ) can_1evt->Print("pic/tracking.pdf]");
 
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   // Calculation of Rec. Eff.

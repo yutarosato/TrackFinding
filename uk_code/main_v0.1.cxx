@@ -40,6 +40,7 @@ double ETheta=-1000;
 
 //-Main
 int main(int argc, char **argv){
+  gROOT->SetBatch(true); // tmppppp
 
   //--Initialize
   disp = new Display();
@@ -860,7 +861,8 @@ int main(int argc, char **argv){
 
     //disp->can[1]->Print("EDisp.ps");
     disp->can[1]->Update();
-    int tmp; scanf("%d",&tmp);
+    //int tmp; scanf("%d",&tmp);
+    disp->can[1]->WaitPrimitive();
 
     disp->graph[9]->Delete();
     es_evn->Delete();

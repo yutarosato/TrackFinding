@@ -1,6 +1,10 @@
 # target
-TARGET = main
+#TARGET = main # main_v0.1 main_v0.1.2 main_v0.1.2.2 main_v0.2
+#TARGET = main_v0.1
+#TARGET = main_v0.1.2
+#TARGET = main_v0.1.2.2
 #TARGET = main_v0.2
+TARGET = main_my
 
 # suffix
 ObjSuf          = .o
