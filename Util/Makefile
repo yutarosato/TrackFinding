@@ -7,9 +7,10 @@ all: $(shell ls *.cpp | sed "s/\.cpp/\.o/g")
 
 .cpp.o:
 	$(CXX) $(ROOTFLAGS) -c $< -o $@
-Style.o       : const.h Style.h    Style.cpp
-Hough.o       : const.h Hough.h    Hough.cpp
-Geometry.o    : const.h Geometry.h Geometry.cpp
+Style.o       : const.h Style.h     Style.cpp
+Hough.o       : const.h Hough.h     Hough.cpp
+Geometry.o    : const.h Geometry.h  Geometry.cpp
+HitsArray.o   : const.h HitsArray.h HitsArray.cpp
 
 .PHONY: clean
 clean:
