@@ -58,7 +58,6 @@ void HitsArray::ClearEvent(){
   
   m_hough_phiz_rho.clear();
   m_hough_phiz_theta.clear();
-  m_hough_phiz_fl.clear();
 
   m_hough_phiz_par0.clear();
   m_hough_phiz_par1.clear();
@@ -83,7 +82,7 @@ void HitsArray::Print( Int_t fl_message ){
 	      << m_pID.at(ivec)   << ", (x,y,z) = ("
 	      << std::setw(7) << std::right << Form("%.2f",m_X.at       (ivec)) << ", "
 	      << std::setw(7) << std::right << Form("%.2f",m_Y.at       (ivec)) << ", "
-	      << std::setw(7) << std::right << Form("%.2f",m_Z.at       (ivec)) << ", phi = "
+	      << std::setw(7) << std::right << Form("%.2f",m_Z.at       (ivec)) << "), phi = "
 	      << std::setw(5) << std::right << Form("%.2f",m_Phi.at     (ivec)) << ", vane-ID = "
 	      << std::setw(2) << std::right << Form("%d",  m_VaneID.at  (ivec)) << ", t(proper) = "
 	      << std::setw(8) << std::right << Form("%.4f",m_pT.at      (ivec)) << ", t(global) = "
@@ -112,31 +111,22 @@ void HitsArray::CalcOrder(){
 void HitsArray::HoughTransform_phiz(){
   TH2D* hist_hough_phiz = new TH2D( Form("hist_hough_phiz_%d",m_hist_hough_phiz.size()), "Hough(#phi-Z);Hough(#phi) [#circ];Hough(Z) [mm]", 180, 0, 180, 500, -250, 250 );
 
-  std::cout << "SIZE = "<< m_X.size() << std::endl;
   for( Int_t ivec=0; ivec<m_X.size(); ivec++ ){
-    std::cout << "ivec = " << ivec << std::endl;
     std::vector<Double_t> tmp_vector;
     if( m_Z[ivec]<-100 || m_Z[ivec]> 100 ){ // tmppppppp
-      m_hough_phiz_fl[ivec] = 0;
+      m_fl_hough_phiz[ivec] = 0;
       continue;
     }
-    std::cout << "ivec = " << ivec << std::endl;
+
     for( Int_t istep=0; istep<m_hough_nstep_theta; istep++ ){
-      std::cout << "          istep1 = " << istep << std::endl;
       Double_t rho = (m_Phi[ivec]*180/TMath::Pi()*TMath::Cos((double)istep*TMath::Pi()/180)
 		      +m_Z[ivec]*TMath::Sin((double)istep*TMath::Pi()/180));
-      std::cout << "          istep2 = " << istep << std::endl;
       Double_t theta = istep;
-      std::cout << "          istep3 = " << istep << std::endl;
       tmp_vector.push_back( rho );
-      std::cout << "          istep4 = " << istep << std::endl;
       hist_hough_phiz->Fill( theta, rho );
-      std::cout << "          istep5 = " << istep << std::endl;
     }
-    //m_hough_phiz_rho.push_back( tmp_vector );
-    m_hough_phiz_fl.push_back ( 1          );
+    m_hough_phiz_rho.push_back( tmp_vector );
   }
-  std::cout << "AAAAAA" << std::endl;
 
   m_hist_hough_phiz.push_back( hist_hough_phiz );
   for( Int_t istep=0; istep<m_hough_nstep_theta; istep++ ) m_hough_phiz_theta.push_back(istep);
@@ -146,22 +136,31 @@ void HitsArray::HoughTransform_phiz(){
 void HitsArray::HoughFit_phiz(){
   // Search Line
   Int_t max_xbin, max_ybin, max_zbin;
-  m_hist_hough_phiz.at(0)->GetMaximumBin(max_xbin,max_ybin, max_zbin);
+  while(1){
+    m_hist_hough_phiz.at(0)->GetMaximumBin(max_xbin,max_ybin, max_zbin);
+    Double_t rho   = m_hist_hough_phiz.at(0)->GetYaxis()->GetBinLowEdge(max_ybin) + m_hist_hough_phiz.at(0)->GetXaxis()->GetBinWidth(max_ybin)/2.0;
+    Double_t theta = m_hist_hough_phiz.at(0)->GetXaxis()->GetBinLowEdge(max_xbin) + m_hist_hough_phiz.at(0)->GetXaxis()->GetBinWidth(max_xbin)/2.0;
+    
+    Double_t par0 =  rho/TMath::Sin(theta*TMath::Pi()/180.0);
+    Double_t par1 = -1.0/TMath::Tan(theta*TMath::Pi()/180.0)*180.0/TMath::Pi();
+    m_hough_phiz_par0.push_back( par0 );
+    m_hough_phiz_par1.push_back( par1 );
+    TH2D* hist_hough_phiz = new TH2D( Form("hist_hough_phiz_%d",m_hist_hough_phiz.size()), "Hough(#phi-Z);Hough(#phi) [#circ];Hough(Z) [mm]", 180, 0, 180, 500, -250, 250 );
+    for( Int_t ivec=0; ivec<m_hough_phiz_rho.size(); ivec++ ){
+      if( TMath::Abs(m_hough_phiz_rho[ivec][max_xbin-1]==m_hist_hough_phiz.at(0)->GetYaxis()->GetBinLowEdge(max_ybin)) ) continue;
+      for( Int_t istep=0; istep<m_hough_nstep_theta; istep++ ) hist_hough_phiz->Fill( m_hough_phiz_theta.at(ivec), m_hough_phiz_rho.at(ivec).at(istep) );
+    }
+    m_hist_hough_phiz.push_back( hist_hough_phiz );
+    break;
+  }
 
-  Double_t rho   = m_hist_hough_phiz.at(0)->GetYaxis()->GetBinLowEdge(max_ybin) + m_hist_hough_phiz.at(0)->GetXaxis()->GetBinWidth(max_ybin)/2.0;
-  Double_t theta = m_hist_hough_phiz.at(0)->GetXaxis()->GetBinLowEdge(max_xbin) + m_hist_hough_phiz.at(0)->GetXaxis()->GetBinWidth(max_xbin)/2.0;
-
-  Double_t par0 =  rho/TMath::Sin(theta*TMath::Pi()/180.0);
-  Double_t par1 = -1.0/TMath::Tan(theta*TMath::Pi()/180.0)*180.0/TMath::Pi();
-  m_hough_phiz_par0.push_back( par0 );
-  m_hough_phiz_par1.push_back( par1 );
 
   // Make Objects(TF1)
   for( Int_t iline=0; iline<m_hough_phiz_par0.size(); iline++ ){
     TF1* func_hough_phiz = new TF1( Form("func_hough_phiz_%d",iline), "[0]+[1]*x", 0.0, 2*TMath::Pi() );
     func_hough_phiz->SetLineColor( iline+1 );
-    func_hough_phiz->SetParameter( 0, par0 );
-    func_hough_phiz->SetParameter( 1, par1 );
+    func_hough_phiz->SetParameter( 0, m_hough_phiz_par0.at(iline) );
+    func_hough_phiz->SetParameter( 1, m_hough_phiz_par1.at(iline) );
     m_func_hough_phiz.push_back( func_hough_phiz );
   }
 
@@ -173,14 +172,14 @@ void HitsArray::CalcHoughResidual_phiz(){
     TH1D* hist_resi_phiz = new TH1D( Form("hist_resi_phiz_%d",iline),  Form("Residual_%d(#phi-Z);",iline),  100, -20, 20 );
     Double_t par0 = m_hough_phiz_par0.at(iline);
     Double_t par1 = m_hough_phiz_par1.at(iline);
-    //hist_resi_phiz.SetLineColor( m_hough_phiz_resi.size()+1 );
+    hist_resi_phiz->SetLineColor( m_hist_hough_phiz_resi.size()+1 );
     Double_t fl_angle = TMath::ATan(par1*180.0/TMath::Pi())*180.0/TMath::Pi();
     for( Int_t ivec=0; ivec<m_X.size(); ivec++ ){
       Double_t residual;
       if( fl_angle>89.9 ) residual = m_Z.at(ivec) - ( par0+par1*m_Phi.at(ivec) );
       else                residual = m_Phi.at(ivec) - ((m_Z.at(ivec) - par0)/par1) *180.0/TMath::Pi();
       hist_resi_phiz->Fill( residual );
-      if( residual < 10 ) m_close_hough_phiz[ivec] = iline;
+      if( TMath::Abs(residual) < 10 ) m_close_hough_phiz[ivec] = iline;
     }
     m_hist_hough_phiz_resi.push_back( hist_resi_phiz );
   }

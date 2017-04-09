@@ -155,13 +155,9 @@ Int_t main( Int_t argc, Char_t** argv ){
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Hough Transformation (phi-Z)
-    std::cout << "A" << std::endl;
     hits_info->HoughTransform_phiz();
-    std::cout << "B" << std::endl;
     hits_info->HoughFit_phiz();
-    std::cout << "C" << std::endl;
     hits_info->CalcHoughResidual_phiz();
-    std::cout << "D" << std::endl;
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // select the hit-points close to the Hough-Fit-line

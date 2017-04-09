@@ -72,7 +72,6 @@ public:
   // Hough Fit
   std::vector<std::vector<Double_t> > m_hough_phiz_rho;
   std::vector<Double_t>               m_hough_phiz_theta;
-  std::vector<Int_t>                  m_hough_phiz_fl;
   
   std::vector<Double_t> m_hough_phiz_par0;
   std::vector<Double_t> m_hough_phiz_par1;
