@@ -465,7 +465,6 @@ Int_t main( Int_t argc, Char_t** argv ){
     hits_info->Print(fl_message); // tmppppp
     // Draw
     if( ((cnt_show < fl_show || ievt==nevt-1) || fl_batch==2) && td_DtEnergy[1] > th_show_energy ){
-      std::cout <<" AAA" << std::endl;
       //hits_info->Print(fl_message); // tmppppp
       can_1evt->cd(1);
       gPad->DrawFrame(-350,-350,350,350, Form("EvtNo:%d, E(e+)=%.1f MeV, P(e+) = (%.1f, %.1f, %.1f);X [mm];Y [mm]",td_eventNum,td_DtEnergy[1],td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]));
@@ -516,12 +515,10 @@ Int_t main( Int_t argc, Char_t** argv ){
       if( v_X.size()>3 ) tex->DrawTextNDC( 0.2,0.20, Form("4th : (%4.2f, %4.2f, %4.2f, %2.2f, %3d)",v_X.at(3),v_Y.at(3),v_Z.at(3),v_Phi.at(3),v_VaneID.at(3)) );
       
       */
-      std::cout <<" BBB" << std::endl;
       if( ievt!=nevt-1 && !gROOT->IsBatch() ){
 	can_1evt->Update();
 	can_1evt->WaitPrimitive();
       }
-      std::cout <<" CCC" << std::endl;
       if( fl_batch==2 ) can_1evt->Print("pic/tracking.pdf");
 
       cnt_show++;
@@ -530,7 +527,6 @@ Int_t main( Int_t argc, Char_t** argv ){
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Delete
     if( ievt!=nevt-1 ){
-      std::cout <<" DDD" << std::endl;
       delete g_decpoint_xy;
       delete g_decpoint_phiz;
       delete g_decvec_xy;
@@ -544,7 +540,6 @@ Int_t main( Int_t argc, Char_t** argv ){
       delete g_hitpoint_xy_close;
       delete g_hitpoint_phiz_close;
       delete g_hitpoint_vanez_close;
-      std::cout <<" EEE" << std::endl;
       //for( Int_t iline=0; iline<hits_info->GetNHoughLines(); iline++ ) delete func_hough_phiz[iline];
       //delete[] func_hough_phiz;
 

@@ -108,7 +108,7 @@ void HitsArray::CalcOrder(){
 }
 
 void HitsArray::HoughTransform_phiz(){
-  TH2D* hist_hough_phiz = new TH2D( Form("hist_hough_phiz_%d",m_hist_hough_phiz.size()), "Hough(#phi-Z);Hough(#phi) [#circ];Hough(Z) [mm]", 180, 0, 180, 500, -250, 250 );
+  TH2D* hist_hough_phiz = new TH2D( Form("hist_hough_phiz_%d",m_hist_hough_phiz.size()), "Hough(#phi-Z);Hough(#phi) [#circ];Hough(Z) [mm]", 180, 0, 180, 1000, -500, 500 );
 
   for( Int_t ivec=0; ivec<m_X.size(); ivec++ ){
     std::vector<Double_t> tmp_vector;
@@ -135,32 +135,25 @@ void HitsArray::HoughTransform_phiz(){
 void HitsArray::HoughFit_phiz(){
   // Search Line
   Int_t max_xbin, max_ybin, max_zbin;
-  std::cout << "START" << std::endl;
-  std::cout << m_hough_phiz_theta.size() << " : " << m_hough_phiz_rho.size() << std::endl;
   while(1){
-    std::cout << "dsdsd1" << std::endl;
     m_hist_hough_phiz.at(0)->GetMaximumBin(max_xbin,max_ybin, max_zbin);
     Double_t rho   = m_hist_hough_phiz.at(0)->GetYaxis()->GetBinLowEdge(max_ybin) + m_hist_hough_phiz.at(0)->GetXaxis()->GetBinWidth(max_ybin)/2.0;
     Double_t theta = m_hist_hough_phiz.at(0)->GetXaxis()->GetBinLowEdge(max_xbin) + m_hist_hough_phiz.at(0)->GetXaxis()->GetBinWidth(max_xbin)/2.0;
     
     Double_t par0 =  rho/TMath::Sin(theta*TMath::Pi()/180.0);
     Double_t par1 = -1.0/TMath::Tan(theta*TMath::Pi()/180.0)*180.0/TMath::Pi();
-    std::cout << "dsdsd2" << std::endl;
     m_hough_phiz_par0.push_back( par0 );
     m_hough_phiz_par1.push_back( par1 );
-    std::cout << "dsdsd3" << std::endl;
-    TH2D* hist_hough_phiz = new TH2D( Form("hist_hough_phiz_%d",m_hist_hough_phiz.size()), "Hough(#phi-Z);Hough(#phi) [#circ];Hough(Z) [mm]", 180, 0, 180, 500, -250, 250 );
+    TH2D* hist_hough_phiz = new TH2D( Form("hist_hough_phiz_%d",m_hist_hough_phiz.size()), "Hough(#phi-Z);Hough(#phi) [#circ];Hough(Z) [mm]", 180, 0, 180, 1000, -500, 500 );
     for( Int_t ivec=0; ivec<m_hough_phiz_rho.size(); ivec++ ){
       if( TMath::Abs(m_hough_phiz_rho[ivec][max_xbin-1]==m_hist_hough_phiz.at(0)->GetYaxis()->GetBinLowEdge(max_ybin)) ) continue;
-      for( Int_t istep=0; istep<m_hough_nstep_theta; istep++ ) hist_hough_phiz->Fill( m_hough_phiz_theta.at(ivec), m_hough_phiz_rho.at(ivec).at(istep) );
+      for( Int_t istep=0; istep<m_hough_nstep_theta; istep++ ){
+	hist_hough_phiz->Fill( m_hough_phiz_theta.at(istep), m_hough_phiz_rho.at(ivec).at(istep) );
+      }
     }
-    std::cout << "dsdsd4" << std::endl;
     m_hist_hough_phiz.push_back( hist_hough_phiz );
-    std::cout << "dsdsd5" << std::endl;
     break;
   }
-  std::cout << "ABC" << std::endl;
-
 
   // Make Objects(TF1)
   for( Int_t iline=0; iline<m_hough_phiz_par0.size(); iline++ ){
@@ -169,7 +162,6 @@ void HitsArray::HoughFit_phiz(){
     func_hough_phiz->SetParameter( 0, m_hough_phiz_par0.at(iline) );
     func_hough_phiz->SetParameter( 1, m_hough_phiz_par1.at(iline) );
     m_func_hough_phiz.push_back( func_hough_phiz );
-    std::cout << "ABCCCCC : " << iline << std::endl;
   }
 
   return;
