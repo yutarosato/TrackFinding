@@ -4,6 +4,7 @@
 #include "../Util/Style.h"
 #include "../Util/Hough.h"
 #include "../Util/Geometry.h"
+#include "../Util/HitsArray.h"
 
 #include <iostream>
 #include <iomanip>

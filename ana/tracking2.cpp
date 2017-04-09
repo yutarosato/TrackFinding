@@ -1,73 +1,11 @@
 #include "setting.h"
-const Int_t    fl_message        = 1;
+
+const Int_t    fl_message        = 2;
 const Int_t    fl_show           = 2;
 const Double_t th_show_energy    = 100.0;
 const Int_t    threshold_success = 3; // Hit definition : >= threshold_success/range_success
 const Int_t    range_success     = 6;
 const Int_t    fl_batch          = 0; // 0(show), 1(batch), 2(batch&save)
-
-// Objects
-std::vector<Double_t> v_X;
-std::vector<Double_t> v_Y;
-std::vector<Double_t> v_Phi;
-std::vector<Double_t> v_Z;
-std::vector<Int_t>    v_VaneID;
-std::vector<Double_t> v_residual_PhiZ;
-
-std::vector<Int_t>    v_closeIndex;
-std::vector<Double_t> v_closeX;
-std::vector<Double_t> v_closeY;
-std::vector<Double_t> v_closePhi;
-std::vector<Double_t> v_closeZ;
-std::vector<Int_t>    v_closeVaneID;
-
-std::vector<Int_t>    v_clusterIndex;
-std::vector<Double_t> v_clusterX;
-std::vector<Double_t> v_clusterY;
-std::vector<Double_t> v_clusterPhi;
-std::vector<Double_t> v_clusterZ;
-std::vector<Int_t>    v_clusterVaneID;
-
-std::vector<Double_t> h_X;
-std::vector<Double_t> h_Y;
-std::vector<Double_t> h_Phi;
-std::vector<Double_t> h_Z;
-
-std::vector<Double_t> v_gT; // global time
-std::vector<Double_t> v_pT; // proper time
-
-void ResetObject(){
-  v_X.clear();
-  v_Y.clear();
-  v_Phi.clear();
-  v_Z.clear();
-  v_VaneID.clear();
-  v_residual_PhiZ.clear();
-
-  v_closeIndex.clear();
-  v_closeX.clear();
-  v_closeY.clear();
-  v_closePhi.clear();
-  v_closeZ.clear();
-  v_closeVaneID.clear();
-
-  v_clusterIndex.clear();
-  v_clusterX.clear();
-  v_clusterY.clear();
-  v_clusterPhi.clear();
-  v_clusterZ.clear();
-  v_clusterVaneID.clear();
-
-  v_gT.clear(); // global time
-  v_pT.clear(); // proper time
-
-  h_X.clear();
-  h_Y.clear();
-  h_Phi.clear();
-  h_Z.clear();
-
-  return;
-}
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Int_t main( Int_t argc, Char_t** argv ){
@@ -94,34 +32,6 @@ Int_t main( Int_t argc, Char_t** argv ){
   
   set_readbranch_body ( tree_body  );
   set_readbranch_decay( tree_decay );
-
-
-
-
-
-  /*
-  TCanvas* can2 = new TCanvas( "can2", "can2", 400, 400 );
-  can2->Draw();
-  std::vector<TF1*> v_func;
-  TF1* tmp_func = new TF1("tmp_func_0","[0]+[1]*x", 0.0, 2*TMath::Pi() );
-  tmp_func->SetParameter(0,1);
-  tmp_func->SetParameter(1,1);
-  v_func.push_back( tmp_func );
-
-  //v_func.at(0)->Draw();
-  v_func.at(0)->Draw();
-  delete v_func.at(0);
-  //tmp_func->Print();
-  //delete tmp_func;
-  //v_func.clear();
-  //std::cout << v_func.size() << std::endl;
-  if( tmp_func==NULL ) std::cout << "NULL" << std::endl;
-  else                 std::cout << "NOT NULL" << std::endl;
-  //v_func.at(0)->Draw();
-
-  can2->WaitPrimitive();
-  */
-    
 
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   // Make Canvas
@@ -154,11 +64,12 @@ Int_t main( Int_t argc, Char_t** argv ){
   Int_t nevt       = tree_body->GetEntries();
   Int_t cnt_signal = 0;
   if( fl_batch==2 ) can_1evt->Print("pic/tracking.pdf[");
+  HitsArray* hits_info = new HitsArray();
+  
   for( Int_t ievt=0; ievt<nevt; ievt++ ){ // START EVENT-LOOP
-    
     if( fl_message && (cnt_show < fl_show || ievt==nevt-1) ) std::cout << "+++++++++++++++ ievt = " << ievt << " ++++++++++++++++++++" << std::endl;
     // read event
-    ResetObject();
+    hits_info ->ClearEvent();
     tree_body ->GetEntry(ievt);
     tree_decay->GetEntry(ievt);
 
@@ -190,12 +101,12 @@ Int_t main( Int_t argc, Char_t** argv ){
     TGraph* g_hitpoint_xy_other    = new TGraph(); // except e+
     TGraph* g_hitpoint_phiz_other  = new TGraph(); // except e+
     TGraph* g_hitpoint_vanez_other = new TGraph(); // except e+
-    g_hitpoint_xy   ->SetMarkerColor(3);
-    g_hitpoint_phiz ->SetMarkerColor(3);
-    g_hitpoint_vanez->SetMarkerColor(3);
-    g_hitpoint_xy   ->SetMarkerStyle(24);
-    g_hitpoint_phiz ->SetMarkerStyle(24);
-    g_hitpoint_vanez->SetMarkerStyle(24);
+    g_hitpoint_xy         ->SetMarkerColor(3);
+    g_hitpoint_phiz       ->SetMarkerColor(3);
+    g_hitpoint_vanez      ->SetMarkerColor(3);
+    g_hitpoint_xy         ->SetMarkerStyle(24);
+    g_hitpoint_phiz       ->SetMarkerStyle(24);
+    g_hitpoint_vanez      ->SetMarkerStyle(24);
     g_hitpoint_xy_other   ->SetMarkerColor(4);
     g_hitpoint_phiz_other ->SetMarkerColor(4);
     g_hitpoint_vanez_other->SetMarkerColor(4);
@@ -213,73 +124,44 @@ Int_t main( Int_t argc, Char_t** argv ){
       if( tb_bodyStatus->at(ihit)!=0    ) continue; // injection hit-point (veto outgoing hit-point)
       if( tb_bodyTyp   ->at(ihit)<= 100 ) continue; // hit on vane
       if( tb_bodyTyp   ->at(ihit)>=1000 ) continue; // hit on vane
-
-      // input to vector-objects
-      v_X.push_back     ( tb_pos_x->at(ihit)                                       );
-      v_Y.push_back     ( tb_pos_y->at(ihit)                                       );
-      v_Z.push_back     ( tb_pos_z->at(ihit)                                       );
-      v_Phi.push_back   ( phi_uk(tb_pos_y->at(ihit),tb_pos_x->at(ihit))            );
-      v_VaneID.push_back( GetVaneID(phi_uk(tb_pos_y->at(ihit),tb_pos_x->at(ihit))) );
-      v_gT.push_back    ( tb_gtime->at(ihit)                                       );
-      v_pT.push_back    ( tb_ptime->at(ihit)                                       );
-
-      g_hitpoint_xy       ->SetPoint( g_hitpoint_xy       ->GetN(), v_X.at     (v_X.size     ()-1), v_Y.at(v_Y.size()-1) );
-      g_hitpoint_phiz     ->SetPoint( g_hitpoint_phiz     ->GetN(), v_Phi.at   (v_Phi.size   ()-1), v_Z.at(v_Z.size()-1) );
-      g_hitpoint_vanez    ->SetPoint( g_hitpoint_vanez    ->GetN(), v_VaneID.at(v_VaneID.size()-1), v_Z.at(v_Z.size()-1) );
-      g_hitpoint_xy_int   ->SetPoint( g_hitpoint_xy_int   ->GetN(), v_X.at     (v_X.size     ()-1), v_Y.at(v_Y.size()-1) );
-      g_hitpoint_phiz_int ->SetPoint( g_hitpoint_phiz_int ->GetN(), v_Phi.at   (v_Phi.size   ()-1), v_Z.at(v_Z.size()-1) );
-      g_hitpoint_vanez_int->SetPoint( g_hitpoint_vanez_int->GetN(), v_VaneID.at(v_VaneID.size()-1), v_Z.at(v_Z.size()-1) );
-
-      if( tb_pID->at(ihit)!=2 ){
-	g_hitpoint_xy_other   ->SetPoint( g_hitpoint_xy_other   ->GetN(), v_X.at     (v_X.size     ()-1), v_Y.at(v_Y.size()-1) );
-	g_hitpoint_phiz_other ->SetPoint( g_hitpoint_phiz_other ->GetN(), v_Phi.at   (v_Phi.size   ()-1), v_Z.at(v_Z.size()-1) );
-	g_hitpoint_vanez_other->SetPoint( g_hitpoint_vanez_other->GetN(), v_VaneID.at(v_VaneID.size()-1), v_Z.at(v_Z.size()-1) );
-      }
-      
-      if( fl_message > 1 && (cnt_show < fl_show || ievt==nevt-1) ) std::cout << "              "
-									     << std::setw(3) << std::right << cnt_hit << " : pID = "
-									     << tb_pID->at(ihit)   << ", (x,y,z) = ("
-									     << std::setw(9) << std::right << Form("%.3f",v_X.at     (v_X.size     ()-1)) << ", "
-									     << std::setw(9) << std::right << Form("%.3f",v_Y.at     (v_Y.size     ()-1)) << ", "
-									     << std::setw(9) << std::right << Form("%.3f",v_Z.at     (v_Z.size     ()-1)) << ", phi = "
-									     << std::setw(6) << std::right << Form("%.3f",v_Phi.at   (v_Phi.size   ()-1)) << ", vane-ID = "
-									     << std::setw(2) << std::right << Form("%d",  v_VaneID.at(v_VaneID.size()-1)) << ", t(proper) = "
-									     << std::setw(7) << std::right << Form("%.5f",v_pT.at    (v_pT.size    ()-1)) << ", t(global) = "
-									     << std::setw(8) << std::right << Form("%.5f",v_gT.at    (v_gT.size    ()-1)) << ", Edep = "
-									     << std::setw(7) << std::right << Form("%.5f",tb_EachDepE->at(ihit))
-									     << std::endl;
+      hits_info->InputHits( cnt_hit, tb_pos_x->at(ihit), tb_pos_y->at(ihit), tb_pos_z->at(ihit), tb_ptime->at(ihit), tb_gtime->at(ihit), tb_pID->at(ihit), tb_EachDepE->at(ihit) );
       cnt_hit++;
     } // END HIT-LOOP
+    hits_info->CalcOrder();
     if( fl_message && (cnt_show < fl_show || ievt==nevt-1) ){
-      std::cout << "Nhit  = " << cnt_hit        << std::endl;
+      std::cout << "Nhit  = " << hits_info->GetNhits()    << std::endl;
       std::cout << "E(e+) = " << td_DtEnergy[1] << " MeV" << std::endl;
     }
-    
+
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++    
+    for( Int_t ihit=0; ihit<hits_info->GetNhits(); ihit++ ){
+      g_hitpoint_xy       ->SetPoint( g_hitpoint_xy       ->GetN(), hits_info->GetX     (ihit), hits_info->GetY(ihit) );
+      g_hitpoint_phiz     ->SetPoint( g_hitpoint_phiz     ->GetN(), hits_info->GetPhi   (ihit), hits_info->GetZ(ihit) );
+      g_hitpoint_vanez    ->SetPoint( g_hitpoint_vanez    ->GetN(), hits_info->GetVaneID(ihit), hits_info->GetZ(ihit) );
+      g_hitpoint_xy_int   ->SetPoint( g_hitpoint_xy_int   ->GetN(), hits_info->GetX     (ihit), hits_info->GetY(ihit) );
+      g_hitpoint_phiz_int ->SetPoint( g_hitpoint_phiz_int ->GetN(), hits_info->GetPhi   (ihit), hits_info->GetZ(ihit) );
+      g_hitpoint_vanez_int->SetPoint( g_hitpoint_vanez_int->GetN(), hits_info->GetVaneID(ihit), hits_info->GetZ(ihit) );
+      if( hits_info->GetpID(ihit)!=2 ){
+	g_hitpoint_xy_other   ->SetPoint( g_hitpoint_xy_other   ->GetN(), hits_info->GetX     (ihit), hits_info->GetY(ihit) );
+	g_hitpoint_phiz_other ->SetPoint( g_hitpoint_phiz_other ->GetN(), hits_info->GetPhi   (ihit), hits_info->GetZ(ihit) );
+	g_hitpoint_vanez_other->SetPoint( g_hitpoint_vanez_other->GetN(), hits_info->GetVaneID(ihit), hits_info->GetZ(ihit) );
+      }
+      
+    }
     hist_Epos     ->Fill( td_DtEnergy[1] );
-    hist_Nhit     ->Fill( cnt_hit        );
-    hist_Epos_Nhit->Fill( td_DtEnergy[1], cnt_hit );
+    hist_Nhit     ->Fill( hits_info->GetNhits()   );
+    hist_Epos_Nhit->Fill( td_DtEnergy[1], hits_info->GetNhits() );
     if( td_DtEnergy[1] > 150 && cnt_hit > 0 ) cnt_signal++;
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Hough Transformation (phi-Z)
-    HoughTransform( v_Phi,v_Z, h_Phi, h_Z );
-    TH2D* hist_hough_phiz = new TH2D("hist_hough_phiz", "Hough(#phi-Z);Hough(#phi) [#circ];Hough(Z) [mm]", 180, 0, 180, 500, -250, 250 );
-    for( Int_t ivec=0; ivec<h_Phi.size(); ivec++ ) hist_hough_phiz->Fill( h_Phi.at(ivec), h_Z.at(ivec) );
-    
-    Double_t par0;
-    Double_t par1;
-    HoughFit_One( hist_hough_phiz, par0, par1 );
-    TF1* func_hough_phiz = new TF1("func_hough_phiz","[0]+[1]*x", 0.0, 2*TMath::Pi() );
-    func_hough_phiz->SetParameter( 0, par0 );
-    func_hough_phiz->SetParameter( 1, par1*180/TMath::Pi() );
-    
-    TH1D* hist_resi_phiz  = new TH1D("hist_resi_phiz",  "Residual(#phi-Z);",  100, -20, 20 );
-    Double_t fl_angle = TMath::ATan(par1*180/TMath::Pi())*180/TMath::Pi();
-    // calculate residual from the result of Hough-Transformation
-    if( TMath::Abs(fl_angle)>89.9 ) GetPol1ResidualY( func_hough_phiz, v_Phi, v_Z, v_residual_PhiZ );
-    else                            GetPol1Residual ( func_hough_phiz, v_Phi, v_Z, v_residual_PhiZ );
-    // make residual-histogram
-    for( Int_t ivec=0; ivec<v_residual_PhiZ.size(); ivec++ ) hist_resi_phiz->Fill( v_residual_PhiZ.at(ivec) );
+    std::cout << "A" << std::endl;
+    hits_info->HoughTransform_phiz();
+    std::cout << "B" << std::endl;
+    hits_info->HoughFit_phiz();
+    std::cout << "C" << std::endl;
+    hits_info->CalcHoughResidual_phiz();
+    std::cout << "D" << std::endl;
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // select the hit-points close to the Hough-Fit-line
@@ -293,35 +175,14 @@ Int_t main( Int_t argc, Char_t** argv ){
     g_hitpoint_phiz_close ->SetMarkerStyle(20);
     g_hitpoint_vanez_close->SetMarkerStyle(20);
     
-
-    //if( fl_message > 1 && (cnt_show < fl_show || ievt==nevt-1) ) std::cout << "   ************<Hits Close to Hough-Line>***************" << std::endl;
-    for( Int_t ivec=0; ivec<v_residual_PhiZ.size(); ivec++ ){
-      if( TMath::Abs(v_residual_PhiZ.at(ivec) - hist_resi_phiz->GetMean()) <= 3*(hist_resi_phiz->GetRMS()) ){
-	v_closeIndex.push_back ( ivec              );
-	v_closeX.push_back     ( v_X.at     (ivec) );
-	v_closeY.push_back     ( v_Y.at     (ivec) );
-	v_closeZ.push_back     ( v_Z.at     (ivec) );
-	v_closePhi.push_back   ( v_Phi.at   (ivec) );
-	v_closeVaneID.push_back( v_VaneID.at(ivec) );
-	g_hitpoint_xy_close   ->SetPoint( g_hitpoint_xy_close   ->GetN(), v_closeX.at     (v_closeX.size     ()-1), v_closeY.at(v_closeY.size()-1) );
-	g_hitpoint_phiz_close ->SetPoint( g_hitpoint_phiz_close ->GetN(), v_closePhi.at   (v_closePhi.size   ()-1), v_closeZ.at(v_closeZ.size()-1) );
-	g_hitpoint_vanez_close->SetPoint( g_hitpoint_vanez_close->GetN(), v_closeVaneID.at(v_closeVaneID.size()-1), v_closeZ.at(v_closeZ.size()-1) );
-	/*
-	if( fl_message > 1 && (cnt_show < fl_show || ievt==nevt-1) ) std::cout << "                  "
-									       << std::setw(10) << std::right << ivec << " : (X,Y,Z,phi,Vane-ID) = ("
-									       << std::setw(9)  << std::right << Form("%.3f",v_closeX.at     (v_closeX.size     ()-1)) << ","
-									       << std::setw(9)  << std::right << Form("%.3f",v_closeY.at     (v_closeY.size     ()-1)) << ","
-									       << std::setw(9)  << std::right << Form("%.3f",v_closeZ.at     (v_closeZ.size     ()-1)) << ","
-								       	       << std::setw(6)  << std::right << Form("%.3f",v_closePhi.at   (v_closePhi.size   ()-1)) << ","
-								       	       << std::setw(2)  << std::right << Form("%d",  v_closeVaneID.at(v_closeVaneID.size()-1)) << ")"
-									       << std::endl;
-	*/
+    for( Int_t ivec=0; ivec<hits_info->GetNhits(); ivec++ ){
+      if( hits_info->GetClose_Hough_phiz(ivec)>=0 ){
+	g_hitpoint_xy_close   ->SetPoint( g_hitpoint_xy_close   ->GetN(), hits_info->GetX     (ivec), hits_info->GetY(ivec) );
+	g_hitpoint_phiz_close ->SetPoint( g_hitpoint_phiz_close ->GetN(), hits_info->GetPhi   (ivec), hits_info->GetZ(ivec) );
+	g_hitpoint_vanez_close->SetPoint( g_hitpoint_vanez_close->GetN(), hits_info->GetVaneID(ivec), hits_info->GetZ(ivec) );
       }
     }
-
-    if( fl_message > 1 && (cnt_show < fl_show || ievt==nevt-1) ) std::cout << "   =====> #Hits close to Hough-Line : " << v_closeZ.size() << std::endl;
-    //if( fl_message && (cnt_show < fl_show || ievt==nevt-1) ) std::cout << "fl_angle = " << fl_angle << std::endl;
-
+    /*
     // Sorting
     if( fl_message > 1 && (cnt_show < fl_show || ievt==nevt-1) ) std::cout << "   ************<Sorted Hits Close to Hough-Line>***************" << std::endl;
     std::multimap<Int_t,Double_t> tMap_Index;
@@ -468,13 +329,6 @@ Int_t main( Int_t argc, Char_t** argv ){
 	Double_t tmp_VaneID_L;
 	Double_t tmp_index_H;
 	Double_t tmp_index_L;
-	/*
-	std::cout << "***********************Edges : " << edge_vane_L << " & " << edge_vane_H << std::endl;
-	std::cout << " +++size =  " << v_clusterVaneID.size() << std::endl;
-	std::cout << " +++size =  " << extrap_index.size()    << std::endl;
-	std::cout << " +++extrap_L = " << extrap_L << std::endl;
-	std::cout << " +++extrap_H = " << extrap_H << std::endl;
-	*/
 
 	for( Int_t ivane=0; ivane<v_VaneID.size(); ivane++ ){ // START HIT-LOOP for steering
 	  if( v_VaneID.at(ivane)!=edge_vane_H + 1 && 
@@ -601,7 +455,7 @@ Int_t main( Int_t argc, Char_t** argv ){
       hist_Nrec->Fill( td_DtEnergy[1] );
       
     }
-    
+    */    
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     TText* tex = new TText();
     tex->SetTextColor(3);
@@ -609,6 +463,7 @@ Int_t main( Int_t argc, Char_t** argv ){
 
     // Draw
     if( ((cnt_show < fl_show || ievt==nevt-1) || fl_batch==2) && td_DtEnergy[1] > th_show_energy ){
+      hits_info->Print(fl_message);
       can_1evt->cd(1);
       gPad->DrawFrame(-350,-350,350,350, Form("EvtNo:%d, E(e+)=%.1f MeV, P(e+) = (%.1f, %.1f, %.1f);X [mm];Y [mm]",td_eventNum,td_DtEnergy[1],td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]));
       g_orbit      ->Draw("Lsame");
@@ -617,7 +472,6 @@ Int_t main( Int_t argc, Char_t** argv ){
       if( g_hitpoint_xy      ->GetN() ) g_hitpoint_xy      ->Draw("Psame");
       if( g_hitpoint_xy_close->GetN() ) g_hitpoint_xy_close->Draw("Psame");
       if( g_hitpoint_xy_other->GetN() ) g_hitpoint_xy_other->Draw("Psame");
-
       
       can_1evt->cd(2);
       gPad           ->DrawFrame(0.0,-250,2.0*TMath::Pi(),250, Form("EvtNo:%d, E(e+)=%.1f MeV;#phi [rad];Z [mm]",td_eventNum,td_DtEnergy[1]));
@@ -626,14 +480,16 @@ Int_t main( Int_t argc, Char_t** argv ){
       if( g_hitpoint_phiz      ->GetN() ) g_hitpoint_phiz      ->Draw("Psame");
       if( g_hitpoint_phiz_close->GetN() ) g_hitpoint_phiz_close->Draw("Psame");
       if( g_hitpoint_phiz_other->GetN() ) g_hitpoint_phiz_other->Draw("Psame");
-      func_hough_phiz      ->Draw("same");
-      
+      hits_info->GetFunc_Hough_phiz(0)->Draw("same");
+
       can_1evt->cd(3);
-      hist_hough_phiz->Draw("COLZ");
-      
+      hits_info->GetHist_Hough_phiz(0)->Draw("COLZ");
+
       can_1evt->cd(4);
-      hist_resi_phiz ->Draw();
-      
+      for( Int_t iline=0; iline<hits_info->GetNHoughLines(); iline++ ){
+	hits_info->GetResidual_Hough_phiz(iline)->Draw( iline ? "same" : "" );
+      }
+      /*            
       can_1evt->cd(5);
       gPad->DrawFrame(0.0,-250,n_vane,250, Form("EvtNo:%d, E(e+)=%.1f MeV;Vane-ID;Z [mm]",td_eventNum,td_DtEnergy[1]));
       if( g_hitcluster_vanez->GetN() ) g_hitcluster_vanez->Draw("Psame");
@@ -656,7 +512,7 @@ Int_t main( Int_t argc, Char_t** argv ){
       if( v_X.size()>2 ) tex->DrawTextNDC( 0.2,0.25, Form("3rd : (%4.2f, %4.2f, %4.2f, %2.2f, %3d)",v_X.at(2),v_Y.at(2),v_Z.at(2),v_Phi.at(2),v_VaneID.at(2)) );
       if( v_X.size()>3 ) tex->DrawTextNDC( 0.2,0.20, Form("4th : (%4.2f, %4.2f, %4.2f, %2.2f, %3d)",v_X.at(3),v_Y.at(3),v_Z.at(3),v_Phi.at(3),v_VaneID.at(3)) );
       
-
+      */
       if( ievt!=nevt-1 && !gROOT->IsBatch() ){
 	can_1evt->Update();
 	can_1evt->WaitPrimitive();
@@ -683,16 +539,22 @@ Int_t main( Int_t argc, Char_t** argv ){
       delete g_hitpoint_phiz_close;
       delete g_hitpoint_vanez_close;
 
+      //for( Int_t iline=0; iline<hits_info->GetNHoughLines(); iline++ ) delete func_hough_phiz[iline];
+      //delete[] func_hough_phiz;
+
+      /*
       delete g_hitcluster_vanez;
       
       delete hist_hough_phiz;
       delete func_hough_phiz;
       delete hist_resi_phiz;
-
+      */
       delete tex;
+
     }
-    
+
   } // END EVENT-LOOP
+  /*
   if( fl_batch==2 ) can_1evt->Print("pic/tracking.pdf]");
 
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -737,7 +599,7 @@ Int_t main( Int_t argc, Char_t** argv ){
 
   can->Update();
 
-  
+  */
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   
   std::cout << "finish" << std::endl;
