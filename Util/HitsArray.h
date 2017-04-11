@@ -19,13 +19,14 @@ public:
   void HoughFit_phiz();
   void CalcHoughResidual_phiz();
 
-  void Clustering();
+  void Clustering( Int_t fl_message=0 );
 
   Double_t Phi_uk   ( Double_t y, Double_t x );
   Int_t    GetVaneID( Double_t f_phi );
   Int_t    GetNVane      (){ return m_geom_nvane;             }
   Int_t    GetNhits      (){ return m_X.size();               }
   Int_t    GetNHoughLines(){ return m_hough_phiz_par0.size(); }
+  Int_t    GetOrdergT    ( Int_t index ){ return m_order_gT.at(index); }
 
   Double_t GetX       ( Int_t index ){ if( index>=m_X.size       () ){ std::cerr << "[ABORT] Wrong index for X"        << std::endl, abort(); } return m_X.at       (index); }
   Double_t GetY       ( Int_t index ){ if( index>=m_Y.size       () ){ std::cerr << "[ABORT] Wrong index for Y"        << std::endl, abort(); } return m_Y.at       (index); }
@@ -101,13 +102,12 @@ public:
 
  public:
   // Extrapolation
-  void  CalcPerpLineSeg( Double_t x1,  Double_t y1,  Double_t x2, Double_t y2, Double_t& slope, Double_t& offset );
-  void  CircleBy3Point ( Double_t x1,  Double_t y1,  Double_t x2, Double_t y2, Double_t x3, Double_t y3,
+  Int_t CalcPerpLineSeg( Double_t x1,  Double_t y1,  Double_t x2, Double_t y2, Double_t& slope, Double_t& offset );
+  Int_t CircleBy3Point ( Double_t x1,  Double_t y1,  Double_t x2, Double_t y2, Double_t x3, Double_t y3,
 			 Double_t& x0, Double_t& y0, Double_t& r );
   Int_t IntersectionCircleLine( Double_t x0, Double_t y0, Double_t r, Double_t slope, Double_t offset, Double_t& x1, Double_t& y1, Double_t& x2, Double_t& y2 );
-  Int_t Extrapolation              ( Bool_t fl_clockwise, Int_t index1, Int_t index2, Int_t index3, Int_t VaneID, Double_t& extrap_r, Double_t& extrap_z );
-  Int_t Extrapolation_Clockwise    ( Int_t index1, Int_t index2, Int_t index3, Int_t VaneID, Double_t& extrap_r, Double_t& extrap_z );
-  Int_t Extrapolation_AntiClockwise( Int_t index1, Int_t index2, Int_t index3, Int_t VaneID, Double_t& extrap_r, Double_t& extrap_z );
+  Int_t Extrapolation              ( Int_t index1, Int_t index2, Int_t index3, Int_t VaneID, Double_t& extrap_r, Double_t& extrap_z,
+				     Double_t& x0, Double_t& y0, Double_t& r, Double_t& dphi );
 
   void Test();
 };

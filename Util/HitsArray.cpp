@@ -92,8 +92,9 @@ void HitsArray::Print( Int_t fl_message ){
 	      << m_pID.at(ivec)   << ", (x,y,z) = ("
 	      << std::setw(7) << std::right << Form("%.2f",m_X.at       (ivec)) << ", "
 	      << std::setw(7) << std::right << Form("%.2f",m_Y.at       (ivec)) << ", "
-	      << std::setw(7) << std::right << Form("%.2f",m_Z.at       (ivec)) << "), phi = "
-	      << std::setw(5) << std::right << Form("%.2f",m_Phi.at     (ivec)) << ", vane-ID = "
+	      << std::setw(7) << std::right << Form("%.2f",m_Z.at       (ivec)) << "), (R,phi) = ("
+	      << std::setw(5) << std::right << Form("%.2f",m_R.at       (ivec)) << ", "
+	      << std::setw(5) << std::right << Form("%.2f",m_Phi.at     (ivec)) << "), vane-ID = "
 	      << std::setw(2) << std::right << Form("%d",  m_VaneID.at  (ivec)) << ", t(proper) = "
 	      << std::setw(8) << std::right << Form("%.4f",m_pT.at      (ivec)) << ", t(global) = "
 	      << std::setw(8) << std::right << Form("%.3f",m_gT.at      (ivec)) << ", Edep = "
@@ -114,8 +115,9 @@ void HitsArray::Print_VaneID_Order( Int_t fl_message ){
 	      << m_pID.at(m_order_VaneID.at(ivane))   << ", (x,y,z) = ("
 	      << std::setw(7) << std::right << Form("%.2f",m_X.at       (m_order_VaneID.at(ivane))) << ", "
 	      << std::setw(7) << std::right << Form("%.2f",m_Y.at       (m_order_VaneID.at(ivane))) << ", "
-	      << std::setw(7) << std::right << Form("%.2f",m_Z.at       (m_order_VaneID.at(ivane))) << "), phi = "
-	      << std::setw(5) << std::right << Form("%.2f",m_Phi.at     (m_order_VaneID.at(ivane))) << ", vane-ID = "
+	      << std::setw(7) << std::right << Form("%.2f",m_Z.at       (m_order_VaneID.at(ivane))) << "), (R,phi) = ("
+	      << std::setw(5) << std::right << Form("%.2f",m_R.at       (m_order_VaneID.at(ivane))) << ", "
+	      << std::setw(5) << std::right << Form("%.2f",m_Phi.at     (m_order_VaneID.at(ivane))) << "), vane-ID = "
 	      << std::setw(2) << std::right << Form("%d",  m_VaneID.at  (m_order_VaneID.at(ivane))) << ", t(proper) = "
 	      << std::setw(8) << std::right << Form("%.4f",m_pT.at      (m_order_VaneID.at(ivane))) << ", t(global) = "
 	      << std::setw(8) << std::right << Form("%.3f",m_gT.at      (m_order_VaneID.at(ivane))) << ", Edep = "
@@ -136,8 +138,9 @@ void HitsArray::Print_gT_Order( Int_t fl_message ){
 	      << m_pID.at(m_order_gT.at(ivane))   << ", (x,y,z) = ("
 	      << std::setw(7) << std::right << Form("%.2f",m_X.at       (m_order_gT.at(ivane))) << ", "
 	      << std::setw(7) << std::right << Form("%.2f",m_Y.at       (m_order_gT.at(ivane))) << ", "
-	      << std::setw(7) << std::right << Form("%.2f",m_Z.at       (m_order_gT.at(ivane))) << "), phi = "
-	      << std::setw(5) << std::right << Form("%.2f",m_Phi.at     (m_order_gT.at(ivane))) << ", vane-ID = "
+	      << std::setw(7) << std::right << Form("%.2f",m_Z.at       (m_order_gT.at(ivane))) << "), (R,phi) = ("
+	      << std::setw(5) << std::right << Form("%.2f",m_R.at       (m_order_gT.at(ivane))) << ", "
+	      << std::setw(5) << std::right << Form("%.2f",m_Phi.at     (m_order_gT.at(ivane))) << "), vane-ID = "
 	      << std::setw(2) << std::right << Form("%d",  m_VaneID.at  (m_order_gT.at(ivane))) << ", t(proper) = "
 	      << std::setw(8) << std::right << Form("%.4f",m_pT.at      (m_order_gT.at(ivane))) << ", t(global) = "
 	      << std::setw(8) << std::right << Form("%.3f",m_gT.at      (m_order_gT.at(ivane))) << ", Edep = "
@@ -167,7 +170,7 @@ void HitsArray::CalcOrder(){
 }
 
 void HitsArray::HoughTransform_phiz(){
-  TH2D* hist_hough_phiz = new TH2D( Form("hist_hough_phiz_%d",m_hist_hough_phiz.size()), "Hough(#phi-Z);Hough(#phi) [#circ];Hough(Z) [mm]", 180, 0, 180, 1000, -500, 500 );
+  TH2D* hist_hough_phiz = new TH2D( Form("hist_hough_phiz_%d",m_hist_hough_phiz.size()), "Hough(#phi-Z #rightarrow #theta-#rho);#theta [#circ];#rho [mm]", 180, 0, 180, 1000, -500, 500 );
 
   for( Int_t ivec=0; ivec<m_X.size(); ivec++ ){
     std::vector<Double_t> tmp_vector;
@@ -181,6 +184,7 @@ void HitsArray::HoughTransform_phiz(){
 		      +m_Z.at(ivec)*TMath::Sin((double)istep*TMath::Pi()/180));
       Double_t theta = istep;
       tmp_vector.push_back( rho );
+      if( theta < 30.0 || theta > 150 ) continue; // tmpppppp
       hist_hough_phiz->Fill( theta+1.0e-5, rho );
     }
     m_hough_phiz_rho.push_back( tmp_vector );
@@ -313,27 +317,32 @@ void HitsArray::CalcHoughResidual_phiz(){
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-void HitsArray::Clustering(){
-  std::cout << "Clustering Start" << std::endl;
-  std::cout << "Nline = " << m_hough_phiz_par0.size() << std::endl;
+void HitsArray::Clustering( Int_t fl_message ){
+  if( fl_message > 1 ) std::cout << "Clustering Start" << std::endl
+				 << "Nline = " << m_hough_phiz_par0.size() << std::endl;
+
   for( Int_t iline=0; iline<m_hough_phiz_par0.size(); iline++ ){ // START LINE-LOOP
+    if( fl_message > 1 ) std::cout << "   iline = " << iline << ", Vane-ID : ";
 
     std::vector<Int_t> cluster_index; // index for Vane-ID order
     for( Int_t ivane=0; ivane<m_order_VaneID.size(); ivane++ ){
       if( m_close_hough_phiz.at(m_order_VaneID.at(ivane))==iline ){
 	m_clusterNo.at( m_order_VaneID.at(ivane) ) = iline;
 	cluster_index.push_back(ivane);
+	if( fl_message > 1 ) std::cout << m_VaneID.at( m_order_VaneID.at(ivane) ) << ", ";
       }
     }
+    if( fl_message > 1 ) std::cout << "seed sluster : " << cluster_index.size() << std::endl;
     if( cluster_index.size()<4 ) return;
-    std::cout << "seed cluster : " << cluster_index.size() << ", vane-ID = "
-	      << m_VaneID.at( m_order_VaneID.at(cluster_index.at(0                     )) ) << " ~ "
-	      << m_VaneID.at( m_order_VaneID.at(cluster_index.at(cluster_index.size()-1)) ) << std::endl;
 
     // forward ++++++++++++++++++++++++++;
     Int_t cnt_miss_forward = 0;
     Double_t pre_target_VaneID = -999;
-    while( cnt_miss_forward < 3 ){
+    Double_t x0;
+    Double_t y0;
+    Double_t r;
+    Double_t dphi;
+    while( cnt_miss_forward < 5 ){
       Double_t extrap_r;
       Double_t extrap_z;
       Int_t index1 = m_order_VaneID.at(cluster_index.at(cluster_index.size()-3));
@@ -341,20 +350,19 @@ void HitsArray::Clustering(){
       Int_t index3 = m_order_VaneID.at(cluster_index.at(cluster_index.size()-1));
       Int_t current_VaneID = m_VaneID.at(index3);
       Int_t target_VaneID  = (pre_target_VaneID < 0 ? m_VaneID.at(index3)+1 : pre_target_VaneID+1 );
-      std::cout << std::endl
-		<< "Extrapolate from "
-		<< m_VaneID.at( index1 ) << "&"
-		<< m_VaneID.at( index2 ) << "&"
-		<< m_VaneID.at( index3 ) << " : cnt_miss_forward = "
-		<< target_VaneID << std::endl;
-
+      if( fl_message > 1 ) std::cout << std::endl
+				     << "Extrapolate(forward) from "
+				     << m_VaneID.at( index1 ) << "&"
+				     << m_VaneID.at( index2 ) << "&"
+				     << m_VaneID.at( index3 ) << std::endl;
+      
       // Find next hit point by extrapolation
       while(1){
 	if( target_VaneID==m_geom_nvane ) target_VaneID = 0;
-	if( current_VaneID==target_VaneID                                                            ){
+	if( current_VaneID==target_VaneID ){
 	  target_VaneID = -999;
 	  break;
-	}else if( Extrapolation_AntiClockwise( index1, index2, index3, target_VaneID, extrap_r, extrap_z ) ){
+	}else if( Extrapolation( index1, index2, index3, target_VaneID, extrap_r, extrap_z, x0, y0, r, dphi )>0 ){
 	  break;
 	}else{
 	  target_VaneID++;
@@ -362,55 +370,62 @@ void HitsArray::Clustering(){
       }
       if( target_VaneID < 0 ) break;
       pre_target_VaneID = target_VaneID;
-      std::cout << "target VaneID = " << target_VaneID << " : R = " << extrap_r << ", Z = " << extrap_z << std::endl;
+      if( fl_message > 1 ) std::cout << "     target VaneID = "
+				     << target_VaneID << " : R = "
+				     << extrap_r      << ", Z = "
+				     << extrap_z      << " : x0 = "
+				     << x0            << ", y0 = "
+				     << y0            << ", r = "
+				     << r             << ", dphi = "
+				     << dphi          << std::endl;
       
       // compare actual hits with extrapolated point.
       Double_t dev_min   = 10000;
       Double_t index_min = -999;
       for( Int_t ivane=0; ivane<m_order_VaneID.size(); ivane++ ){
 	if( m_VaneID.at(m_order_VaneID.at(ivane))!=target_VaneID ) continue;
+	if( m_clusterNo.at(m_order_VaneID.at(ivane))>=0          ) continue;
 	Double_t dev_r = TMath::Abs( extrap_r - m_R.at(m_order_VaneID.at(ivane)) );
 	Double_t dev_z = TMath::Abs( extrap_z - m_Z.at(m_order_VaneID.at(ivane)) );
-	std::cout << "dev(r) = " << dev_r << ", dev(z) = " << dev_z << std::endl;
+	if( fl_message > 1 ) std::cout << "       dev(r) = " << dev_r << ", dev(z) = " << dev_z << ", dev_min = " << sqrt(pow(dev_r,2)+pow(dev_z,2)) << std::endl;
 	if( dev_min > sqrt(pow(dev_r,2)+pow(dev_z,2)) ){
 	  dev_min   = sqrt(pow(dev_r,2)+pow(dev_z,2));
 	  index_min = ivane;
 	}
       }
-      if( dev_min < 10 ){
+      if( dev_min < 5.0*dphi || dev_min < 10 ){ // tmpppp
 	m_clusterNo.at( m_order_VaneID.at(index_min) ) = iline;
 	cluster_index.push_back(index_min);
 	cnt_miss_forward = 0;
+	if( fl_message > 1 ) std::cout << "       => added the hit into the cluster" << std::endl;
       }else{
-	std::cout << "can not find hit points by extrapolation : dev_min = " << dev_min << std::endl;
-	cnt_miss_forward++;
-	std::cout << "cnt_miss_forward = " << cnt_miss_forward << std::endl;
+	if( !(extrap_r < m_geom_r_inner || extrap_r > m_geom_r_outer) ) cnt_miss_forward++;
+	if( fl_message > 1 ) std::cout << "       => can not find hit points by extrapolation : dev_min = " << dev_min << ", cnt_miss_foward = " << cnt_miss_forward << std::endl;
       }
     }
     // backward ++++++++++++++++++++++++++;
     Int_t cnt_miss_backward = 0;
     pre_target_VaneID = -999;
-    while( cnt_miss_backward < 3 ){
+    while( cnt_miss_backward < 5 ){
       Double_t extrap_r;
       Double_t extrap_z;
       Int_t index1 = m_order_VaneID.at(cluster_index.at(2));
       Int_t index2 = m_order_VaneID.at(cluster_index.at(1));
       Int_t index3 = m_order_VaneID.at(cluster_index.at(0));
-      std::cout << std::endl
-		<< "Extrapolate from "
-		<< m_VaneID.at( index1 ) << "&"
-		<< m_VaneID.at( index2 ) << "&"
-		<< m_VaneID.at( index3 ) << std::endl;
       Int_t current_VaneID = m_VaneID.at(index3);
       Int_t target_VaneID  = (pre_target_VaneID < 0 ? m_VaneID.at(index3)-1 : pre_target_VaneID-1 );
+      if( fl_message > 1 ) std::cout << std::endl
+				     << "Extrapolate(backward) from "
+				     << m_VaneID.at( index1 ) << "&"
+				     << m_VaneID.at( index2 ) << "&"
+				     << m_VaneID.at( index3 ) << std::endl;
       // Find next hit point by extrapolation
       while(1){
-
 	if( target_VaneID==-1 ) target_VaneID = m_geom_nvane-1;
 	if( current_VaneID==target_VaneID                                                        ){
 	  target_VaneID = -999;
 	  break;
-	}else if( Extrapolation_Clockwise( index1, index2, index3, target_VaneID, extrap_r, extrap_z ) ){
+	}else if( Extrapolation( index1, index2, index3, target_VaneID, extrap_r, extrap_z, x0, y0, r, dphi )>0 ){
 	  break;
 	}else{
 	  target_VaneID--;
@@ -418,33 +433,42 @@ void HitsArray::Clustering(){
       }
       if( target_VaneID < 0 ) break;
       pre_target_VaneID = target_VaneID;
-      std::cout << "target VaneID = " << target_VaneID << " : R = " << extrap_r << ", Z = " << extrap_z << std::endl;
+      if( fl_message > 1 ) std::cout << "     target VaneID = "
+				     << target_VaneID << " : R = "
+				     << extrap_r      << ", Z = "
+				     << extrap_z      << " : x0 = "
+				     << x0            << ", y0 = "
+				     << y0            << ", r = "
+				     << r             << ", dphi = "
+				     << dphi          << std::endl;
 
       // compare actual hits with extrapolated point.
       Double_t dev_min   = 10000;
       Double_t index_min = -999;
       for( Int_t ivane=0; ivane<m_order_VaneID.size(); ivane++ ){
 	if( m_VaneID.at(m_order_VaneID.at(ivane))!=target_VaneID ) continue;
+	if( m_clusterNo.at(m_order_VaneID.at(ivane))>=0          ) continue;
 	Double_t dev_r = TMath::Abs( extrap_r - m_R.at(m_order_VaneID.at(ivane)) );
 	Double_t dev_z = TMath::Abs( extrap_z - m_Z.at(m_order_VaneID.at(ivane)) );
-	std::cout << "dev(r) = " << dev_r << ", dev(z) = " << dev_z << std::endl;
+	if( fl_message > 1 ) std::cout << "       dev(r) = " << dev_r << ", dev(z) = " << dev_z << ", dev_min = " << sqrt(pow(dev_r,2)+pow(dev_z,2)) << std::endl;
 	if( dev_min > sqrt(pow(dev_r,2)+pow(dev_z,2)) ){
 	  dev_min   = sqrt(pow(dev_r,2)+pow(dev_z,2));
 	  index_min = ivane;
 	}
       }
-      if( dev_min < 10 ){
+      if( dev_min < 5.0*dphi || dev_min < 10 ){ // tmpppp
 	m_clusterNo.at( m_order_VaneID.at(index_min) ) = iline;
 	cluster_index.insert(cluster_index.begin(), index_min);
 	cnt_miss_backward = 0;
+	if( fl_message > 1 ) std::cout << "       => added the hit into the cluster" << std::endl;
       }else{
-	std::cout << "can not find hit points by extrapolation : dev_min = " << dev_min << std::endl;
-	cnt_miss_backward++;
+	if( !(extrap_r < m_geom_r_inner || extrap_r > m_geom_r_outer) ) cnt_miss_backward++;
+	if( fl_message > 1 ) std::cout << "can not find hit points by extrapolation : dev_min = " << dev_min << std::endl;
       }
     }
     
   } // END LINE-LOOP
-  std::cout << "Clustering finish" << std::endl;
+  if( fl_message > 1 ) std::cout << "Clustering finish" << std::endl;
   
   return;
 }
@@ -475,20 +499,29 @@ Int_t HitsArray::GetVaneID( Double_t f_phi ){
   */
 }
 
-void HitsArray::CalcPerpLineSeg( Double_t x1, Double_t y1, Double_t x2, Double_t y2, Double_t& slope, Double_t& offset ){
-  if( TMath::Abs(x1-x2)<1.0e-5 && TMath::Abs(y1-y2)<1.0e-5 ) std::cerr << "[ABORT] Same points are input" << std::endl, abort();
+Int_t HitsArray::CalcPerpLineSeg( Double_t x1, Double_t y1, Double_t x2, Double_t y2, Double_t& slope, Double_t& offset ){
+  if( TMath::Abs(x1-x2)<1.0e-5 && TMath::Abs(y1-y2)<1.0e-5 ){
+    //std::cerr << "[ABORT] Same points are input" << std::endl;
+    return -1;
+  }
   Double_t slope1 = ( x2!=x1 ? (y2-y1)/(x2-x1) : 0.0 );
-  if( TMath::Abs(slope1)<1.0e-5 ) std::cerr << "[ABORT] Invalid slope : " << slope1 << std::endl, abort();
+  if( TMath::Abs(slope1)<1.0e-5 ){
+    //std::cerr << "[ABORT] Invalid slope : " << slope1 << std::endl;
+    return -1;
+  }
   slope = -1.0/slope1;
   offset = (y1+y2)/2.0 - slope*(x1+x2)/2.0;
-  return;
+  return 1;
 }
 
-void HitsArray::CircleBy3Point( Double_t x1, Double_t y1, Double_t x2, Double_t y2, Double_t x3, Double_t y3,
+Int_t HitsArray::CircleBy3Point( Double_t x1, Double_t y1, Double_t x2, Double_t y2, Double_t x3, Double_t y3,
 				Double_t& x0, Double_t& y0, Double_t& r ){
-  if( TMath::Abs(x1-x2)<1.0e-5 && TMath::Abs(y1-y2)<1.0e-5 ) std::cerr << "[ABORT] Same points are input" << std::endl, abort();
-  if( TMath::Abs(x2-x3)<1.0e-5 && TMath::Abs(y2-y3)<1.0e-5 ) std::cerr << "[ABORT] Same points are input" << std::endl, abort();
-  if( TMath::Abs(x3-x1)<1.0e-5 && TMath::Abs(y3-y1)<1.0e-5 ) std::cerr << "[ABORT] Same points are input" << std::endl, abort();
+  if( TMath::Abs(x1-x2)<1.0e-5 && TMath::Abs(y1-y2)<1.0e-5 ||
+      TMath::Abs(x2-x3)<1.0e-5 && TMath::Abs(y2-y3)<1.0e-5 ||
+      TMath::Abs(x3-x1)<1.0e-5 && TMath::Abs(y3-y1)<1.0e-5 ){
+    //std::cerr << "[ABORT] Same points are input" << std::endl;
+    return -1;
+  }
 
   Double_t slope1;
   Double_t slope2;
@@ -497,11 +530,14 @@ void HitsArray::CircleBy3Point( Double_t x1, Double_t y1, Double_t x2, Double_t 
 
   CalcPerpLineSeg( x1, y1, x2, y2, slope1, offset1 );
   CalcPerpLineSeg( x2, y2, x3, y3, slope2, offset2 );
-  if( TMath::Abs(slope2-slope1)<1.0e-5 ) std::cerr << "[ABORT] Three points on straight line" << std::endl, abort();
+  if( TMath::Abs(slope2-slope1)<1.0e-5 ){
+    //std::cerr << "[ABORT] Three points on straight line" << std::endl;
+    return -1;
+  }
   x0 = (offset2-offset1)/(slope1-slope2);
   y0 = slope1 * x0 + offset1;
   r = sqrt( pow(x1-x0,2) + pow(y1-y0,2) );
-  return;
+  return 1;
 }
 
 Int_t HitsArray::IntersectionCircleLine( Double_t x0, Double_t y0, Double_t r, Double_t slope, Double_t offset, Double_t& x1, Double_t& y1, Double_t& x2, Double_t& y2 ){
@@ -511,7 +547,7 @@ Int_t HitsArray::IntersectionCircleLine( Double_t x0, Double_t y0, Double_t r, D
   Double_t c2 = pow(slope,2) + 1.0;
   Double_t c1 = 2.0*(offset-y0)*slope - 2.0* x0;
   Double_t c0 = pow(x0,2) + pow(offset-y0,2) - pow(r,2);
-  if( pow(c1,2) - 4*c2*c0 < 0 ) return 0;
+  if( pow(c1,2) - 4*c2*c0 < 0 ) return -1;
   
   x1 = (-c1 + sqrt(pow(c1,2)-4*c2*c0))/(2*c2);
   x2 = (-c1 - sqrt(pow(c1,2)-4*c2*c0))/(2*c2);
@@ -523,25 +559,44 @@ Int_t HitsArray::IntersectionCircleLine( Double_t x0, Double_t y0, Double_t r, D
 }
 
 
-Int_t HitsArray::Extrapolation( Bool_t fl_clockwise, Int_t index1, Int_t index2, Int_t index3, Int_t VaneID, Double_t& extrap_r, Double_t& extrap_z ){
+Int_t HitsArray::Extrapolation( Int_t index1, Int_t index2, Int_t index3, Int_t VaneID, Double_t& extrap_r, Double_t& extrap_z, Double_t& x0, Double_t& y0, Double_t& r, Double_t& dphi ){
   //if     ( VaneID==m_geom_nvane ) VaneID = 0;
   //else if( VaneID==-1           ) VaneID = m_geom_nvane-1;
-  Double_t x0;
-  Double_t y0;
-  Double_t r;
 
-  CircleBy3Point( m_X.at(index1), m_Y.at(index1), m_X.at(index2), m_Y.at(index2), m_X.at(index3), m_Y.at(index3), x0, y0, r );
+  if( CircleBy3Point( m_X.at(index1), m_Y.at(index1), m_X.at(index2), m_Y.at(index2), m_X.at(index3), m_Y.at(index3), x0, y0, r )<0 ) return -1;
   Double_t slope_vane = TMath::Tan(m_geom_phi[VaneID]);
 
   Double_t phi_org1 = Phi_uk( m_Y.at(index1)-y0, m_X.at(index1)-x0 );
   Double_t phi_org2 = Phi_uk( m_Y.at(index2)-y0, m_X.at(index2)-x0 );
   Double_t phi_org3 = Phi_uk( m_Y.at(index3)-y0, m_X.at(index3)-x0 );
-  if( fl_clockwise ){ // phi_org3 < phi_org2 < phi_org1
-    while( phi_org2 > phi_org1 ) phi_org2 -= 2.0*TMath::Pi(); 
-    while( phi_org3 > phi_org2 ) phi_org3 -= 2.0*TMath::Pi(); 
-  }else{ // phi_org3 > phi_org2 > phi_org1
-    while( phi_org2 < phi_org1 ) phi_org2 += 2.0*TMath::Pi(); 
-    while( phi_org3 < phi_org2 ) phi_org3 += 2.0*TMath::Pi(); 
+
+
+  // judgement of clockwise(phi1 > phi2 > phi3) or anti-clockwise(phi1 < phi2 < phi3)
+  Double_t tmp_phi_org1_clockwise = phi_org1;
+  Double_t tmp_phi_org2_clockwise = phi_org2;
+  Double_t tmp_phi_org3_clockwise = phi_org3;
+  while( tmp_phi_org2_clockwise > tmp_phi_org1_clockwise ) tmp_phi_org2_clockwise -= 2.0*TMath::Pi();
+  while( tmp_phi_org3_clockwise > tmp_phi_org2_clockwise ) tmp_phi_org3_clockwise -= 2.0*TMath::Pi();
+  Double_t dphi_clockwise = TMath::Abs( tmp_phi_org3_clockwise - tmp_phi_org1_clockwise );
+
+  Double_t tmp_phi_org1_anticlockwise = phi_org1;
+  Double_t tmp_phi_org2_anticlockwise = phi_org2;
+  Double_t tmp_phi_org3_anticlockwise = phi_org3;
+  while( tmp_phi_org2_anticlockwise < tmp_phi_org1_anticlockwise ) tmp_phi_org2_anticlockwise += 2.0*TMath::Pi(); 
+  while( tmp_phi_org3_anticlockwise < tmp_phi_org2_anticlockwise ) tmp_phi_org3_anticlockwise += 2.0*TMath::Pi();
+  Double_t dphi_anticlockwise = TMath::Abs( tmp_phi_org3_anticlockwise - tmp_phi_org1_anticlockwise );
+
+  Bool_t fl_clockwise;
+  if( dphi_clockwise < dphi_anticlockwise ){
+    fl_clockwise = true;
+    phi_org1 = tmp_phi_org1_clockwise;
+    phi_org2 = tmp_phi_org2_clockwise;
+    phi_org3 = tmp_phi_org3_clockwise;
+  }else{
+    fl_clockwise = false;
+    phi_org1 = tmp_phi_org1_anticlockwise;
+    phi_org2 = tmp_phi_org2_anticlockwise;
+    phi_org3 = tmp_phi_org3_anticlockwise;
   }
 
   Double_t x1;
@@ -549,11 +604,11 @@ Int_t HitsArray::Extrapolation( Bool_t fl_clockwise, Int_t index1, Int_t index2,
   Double_t x2;
   Double_t y2;
   Int_t    fl_answer = IntersectionCircleLine( x0, y0, r, slope_vane, 0.0, x1, y1, x2, y2 );
-  if( !fl_answer ) return 0;
+  if( fl_answer<0 ) return -1;
   Double_t phi1 = Phi_uk( y1-y0, x1-x0 );
   Double_t phi2 = Phi_uk( y2-y0, x2-x0 );
 
-  //std::cout << "     Extrapolated Circle : x0 = " << x0 << ", y0 = " << y0 << ", r  = " << r << std::endl;
+  //std::cout << "     Extrapolated Circle : x0 = " << x0 << ", y0 = " << y0 << ", r  = " << r << " : fl_clockwise = " << fl_clockwise << std::endl;
   //std::cout << "     x1 = " << m_X.at(index1) << ", y1 = " << m_Y.at(index1) << ", z1 = " << m_Z.at(index1) << ", phi(org1) = " << phi_org1 << " : Vane-ID = " << m_VaneID.at(index1) << std::endl
   //<< "     x2 = " << m_X.at(index2) << ", y2 = " << m_Y.at(index2) << ", z2 = " << m_Z.at(index2) << ", phi(org2) = " << phi_org2 << " : Vane-ID = " << m_VaneID.at(index2) << std::endl
   //<< "     x3 = " << m_X.at(index3) << ", y3 = " << m_Y.at(index3) << ", z3 = " << m_Z.at(index3) << ", phi(org3) = " << phi_org3 << " : Vane-ID = " << m_VaneID.at(index3) << std::endl;
@@ -563,36 +618,29 @@ Int_t HitsArray::Extrapolation( Bool_t fl_clockwise, Int_t index1, Int_t index2,
   if( VaneID/(m_geom_nvane/2)==0 ){
     if     ( y1>0 ){ extrap_x = x1; extrap_y = y1; extrap_phi = phi1; }
     else if( y2>0 ){ extrap_x = x2; extrap_y = y2; extrap_phi = phi2; }
-    else           return 0;
+    else           return -1;
   }else if( VaneID/(m_geom_nvane/2)==1 ){
     if     ( y1<0 ){ extrap_x = x1; extrap_y = y1; extrap_phi = phi1; }
     else if( y2<0 ){ extrap_x = x2; extrap_y = y2; extrap_phi = phi2; }
-    else           return 0;
+    else           return -1;
   }else{
-    return 0;
+    return -1;
   }
-  if( fl_clockwise ){ // extrap_phi < phi_org3
+  if( fl_clockwise ){ // phi3 > extrap_phi
     while( extrap_phi > phi_org3 ) extrap_phi -= 2.0*TMath::Pi();
-  }else{ // extrap_phi > phi_org3
+  }else{ // phi3 < extrap_phi
     while( extrap_phi < phi_org3 ) extrap_phi += 2.0*TMath::Pi();
   }
+  dphi = TMath::Abs( phi_org3 - extrap_phi );
+
+  extrap_z = m_Z.at(index3) + (m_Z.at(index3)-m_Z.at(index1))/(phi_org3-phi_org1)*(extrap_phi-phi_org3);  
   extrap_r = sqrt(pow(extrap_x,2) + pow(extrap_y,2));
-  if( extrap_r < m_geom_r_inner || extrap_r > m_geom_r_outer ) return 0;
-  
-  extrap_z = m_Z.at(index3) + (m_Z.at(index3)-m_Z.at(index2))/(phi_org3-phi_org2)*(extrap_phi-phi_org3);
-  if( extrap_z < m_geom_z_min || extrap_z > m_geom_z_max ) return 0;
 
   //std::cout << "     Extrapx = " << extrap_x << ", extrapy = " << extrap_y << ", extrapz = " << extrap_z << ", extrap_phi = " << extrap_phi << std::endl;
-  
-  return 1;
-}
+  if( extrap_z < m_geom_z_min   || extrap_z > m_geom_z_max   ) return -1;
+  if( extrap_r < m_geom_r_inner || extrap_r > m_geom_r_outer ) return 2; 
 
-Int_t HitsArray::Extrapolation_Clockwise( Int_t index1, Int_t index2, Int_t index3, Int_t VaneID, Double_t& extrap_r, Double_t& extrap_z ){
-  return Extrapolation( true, index1, index2, index3, VaneID, extrap_r, extrap_z );
-}
-
-Int_t HitsArray::Extrapolation_AntiClockwise( Int_t index1, Int_t index2, Int_t index3, Int_t VaneID, Double_t& extrap_r, Double_t& extrap_z ){
-  return Extrapolation( false, index1, index2, index3, VaneID, extrap_r, extrap_z );
+  return 1; // 
 }
 
 void HitsArray::Test(){

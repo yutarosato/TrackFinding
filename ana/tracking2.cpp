@@ -1,10 +1,10 @@
 #include "setting.h"
 
-const Int_t    fl_message        = 2;
-const Int_t    fl_show           = 100;
-const Double_t th_show_energy    = 100.0;
+const Int_t    fl_message        = 1;
+const Int_t    fl_show           = 1;
+const Double_t th_show_energy    = 200.0;
 const Int_t    threshold_success = 3; // Hit definition : >= threshold_success/range_success
-const Int_t    range_success     = 6;
+const Int_t    range_success     = 3;
 const Int_t    fl_batch          = 0; // 0(show), 1(batch), 2(batch&save)
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -12,10 +12,10 @@ Int_t main( Int_t argc, Char_t** argv ){
   gROOT->SetBatch(fl_batch);
   TStyle* sty = Style(1);
   TApplication app( "app", &argc, argv );
-  if( !(app.Argc()==2) )
+  if( app.Argc()<2 )
     std::cerr << "Wrong input" << std::endl
 	      << "Usage : " << app.Argv(0)
-	      << " (char*)infilename" << std::endl
+	      << " (char*)infilenames " << std::endl
 	      << "[e.g]" << std::endl
 	      << app.Argv(0) << " test.root" << std::endl
 	      << std::endl, abort();
@@ -24,9 +24,12 @@ Int_t main( Int_t argc, Char_t** argv ){
   
   TChain* tree_body  = new TChain( "ntupleBody"  );
   TChain* tree_decay = new TChain( "ntupleDecay" );
-  tree_body ->Add( infilename );
-  tree_decay->Add( infilename );
-  std::cout << "[infile] " << infilename << " : "
+  Int_t nfile = app.Argc()-1;
+  for( Int_t ifile=0; ifile<nfile; ifile++ ){
+    tree_body ->Add( app.Argv(ifile+1) );
+    tree_decay->Add( app.Argv(ifile+1) );
+  }
+  std::cout << nfile                    << " files, "
 	    << tree_body ->GetEntries() << " entries(body), "
 	    << tree_decay->GetEntries() << " entries(decay)" << std::endl;
   
@@ -67,8 +70,9 @@ Int_t main( Int_t argc, Char_t** argv ){
   HitsArray* hits_info = new HitsArray();
   
   for( Int_t ievt=0; ievt<nevt; ievt++ ){ // START EVENT-LOOP
+    //if( ievt!=669 ) continue; // tmppppp
     //if( fl_message && (cnt_show < fl_show || ievt==nevt-1) ) std::cout << "+++++++++++++++ ievt = " << ievt << " ++++++++++++++++++++" << std::endl;
-    std::cout << "+++++++++++++++ ievt = " << ievt << " ++++++++++++++++++++" << std::endl; // tmppppp
+    std::cout << "+++++++++++++++ ievt = " << ievt << " ++++++++++++++++++++" << std::endl;
     // read event
     hits_info ->ClearEvent();
     tree_body ->GetEntry(ievt);
@@ -181,7 +185,8 @@ Int_t main( Int_t argc, Char_t** argv ){
     }
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //clustering
-    hits_info->Clustering();
+    hits_info->Print_VaneID_Order(fl_message); // tmppppp
+    hits_info->Clustering(fl_message *((Int_t)(cnt_show < fl_show)));
     
     TGraph* g_hitcluster_phiz = new TGraph();
     g_hitcluster_phiz->SetMarkerColor(3);
@@ -191,22 +196,16 @@ Int_t main( Int_t argc, Char_t** argv ){
       if( hits_info->GetClusterNo( ivec )!=0 ) continue;
       g_hitcluster_phiz->SetPoint( g_hitcluster_phiz->GetN(), hits_info->GetPhi(ivec), hits_info->GetZ(ivec) );
     }
-    /*    
+
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Judgement of success or false
-    std::map<Double_t,Int_t> map_time_sort;
-    for( Int_t ihit=0; ihit<(int)v_Z.size(); ihit++ ) map_time_sort.insert( std::pair<Double_t,Int_t>(v_gT.at(ihit), ihit) );
-
     const Int_t n_primary_hit = 10;
     Int_t fl_success[n_primary_hit] = {0};
 
     Int_t tmp_cnt = 0;
-    for( std::map<Double_t,Int_t>::iterator itime = map_time_sort.begin(); itime != map_time_sort.end(); itime++ ){
-      for( Int_t icls=0;icls<v_clusterZ.size();icls++ ){
-	if( v_VaneID[itime->second]==v_clusterVaneID[icls] && TMath::Abs(v_Z[itime->second]-v_clusterZ[icls])<1e-5 ) fl_success[tmp_cnt]++; // check if how many hits are detected from hits(1st~3rd)
-      }
-      tmp_cnt++;
-      if( tmp_cnt==n_primary_hit ) break;
+    for( Int_t ip=0; ip<n_primary_hit; ip++ ){
+      if( hits_info->GetNhits() == ip ) break;
+      if( hits_info->GetClusterNo(hits_info->GetOrdergT(ip)) >= 0 ) fl_success[ip] = 1;
     }
     
     Int_t fl_success_integral[n_primary_hit] = {0};
@@ -220,16 +219,15 @@ Int_t main( Int_t argc, Char_t** argv ){
 
     if( fl_fin_success ){
       hist_Nrec->Fill( td_DtEnergy[1] );
-      
     }
-    */    
+
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     TText* tex = new TText();
     tex->SetTextColor(3);
     tex->SetTextSize(0.05);
-    //hits_info->Print             (fl_message); // tmppppp
-    hits_info->Print_VaneID_Order(fl_message); // tmppppp
+    hits_info->Print             (fl_message*((Int_t)(cnt_show<fl_show))); // tmppppp
+    //hits_info->Print_VaneID_Order(fl_message); // tmppppp
     //hits_info->Print_gT_Order    (fl_message); // tmppppp
     // Draw
     if( ((cnt_show < fl_show || ievt==nevt-1) || fl_batch==2) && td_DtEnergy[1] > th_show_energy ){
@@ -272,25 +270,54 @@ Int_t main( Int_t argc, Char_t** argv ){
       tex->DrawTextNDC( 0.2,0.80, Form("EvtNo = %d", td_eventNum   ) );
       tex->DrawTextNDC( 0.2,0.75, Form("E(e+) = %.1f MeV", td_DtEnergy[1]) );
       tex->DrawTextNDC( 0.2,0.70, Form("P(e+) = (%.1f, %.1f, %.1f) [MeV]",td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]) );
-      /*
-      tex->DrawTextNDC( 0.2,0.65, Form("Nhit(  all  ) = %d",  v_X.size       ()) );
-      tex->DrawTextNDC( 0.2,0.60, Form("Nhit( close ) = %d",  v_closeX.size  ()) );
-      tex->DrawTextNDC( 0.2,0.55, Form("Nhit(cluster) = %d",  v_clusterX.size()) );
+      tex->DrawTextNDC( 0.2,0.65, Form("Nhit(  all  ) = %d",  hits_info->GetNhits()) );
       tex->DrawTextNDC( 0.2,0.50, Form("%s : %d%d%d%d%d %d%d%d%d%d",(fl_fin_success ? "Success" : "False"),
 				       fl_success[0],fl_success[1],fl_success[2],fl_success[3],fl_success[4],
 				       fl_success[5],fl_success[6],fl_success[7],fl_success[8],fl_success[9])
 			);
-      if( v_X.size()>0 ) tex->DrawTextNDC( 0.2,0.40, Form("        (X,  Y,  Z,  phi,  Vane-ID)") );
-      if( v_X.size()>0 ) tex->DrawTextNDC( 0.2,0.35, Form("1st : (%4.2f, %4.2f, %4.2f, %2.2f, %3d)",v_X.at(0),v_Y.at(0),v_Z.at(0),v_Phi.at(0),v_VaneID.at(0)) );
-      if( v_X.size()>1 ) tex->DrawTextNDC( 0.2,0.30, Form("2nd : (%4.2f, %4.2f, %4.2f, %2.2f, %3d)",v_X.at(1),v_Y.at(1),v_Z.at(1),v_Phi.at(1),v_VaneID.at(1)) );
-      if( v_X.size()>2 ) tex->DrawTextNDC( 0.2,0.25, Form("3rd : (%4.2f, %4.2f, %4.2f, %2.2f, %3d)",v_X.at(2),v_Y.at(2),v_Z.at(2),v_Phi.at(2),v_VaneID.at(2)) );
-      if( v_X.size()>3 ) tex->DrawTextNDC( 0.2,0.20, Form("4th : (%4.2f, %4.2f, %4.2f, %2.2f, %3d)",v_X.at(3),v_Y.at(3),v_Z.at(3),v_Phi.at(3),v_VaneID.at(3)) );
-      */
+      if( hits_info->GetNhits()>0 ) tex->DrawTextNDC( 0.2,0.40, Form("        (X,  Y,  Z,  phi,  Vane-ID)") );
+      if( hits_info->GetNhits()>0 ) tex->DrawTextNDC( 0.2,0.35, Form("1st : (%4.2f, %4.2f, %4.2f, %2.2f, %3d)",
+								     hits_info->GetX     (hits_info->GetOrdergT(0)),
+								     hits_info->GetY     (hits_info->GetOrdergT(0)),
+								     hits_info->GetZ     (hits_info->GetOrdergT(0)),
+								     hits_info->GetPhi   (hits_info->GetOrdergT(0)),
+								     hits_info->GetVaneID(hits_info->GetOrdergT(0))
+								     ));
+      if( hits_info->GetNhits()>1 ) tex->DrawTextNDC( 0.2,0.30, Form("2nd : (%4.2f, %4.2f, %4.2f, %2.2f, %3d)",
+								     hits_info->GetX     (hits_info->GetOrdergT(1)),
+								     hits_info->GetY     (hits_info->GetOrdergT(1)),
+								     hits_info->GetZ     (hits_info->GetOrdergT(1)),
+								     hits_info->GetPhi   (hits_info->GetOrdergT(1)),
+								     hits_info->GetVaneID(hits_info->GetOrdergT(1))
+								     ));
+      if( hits_info->GetNhits()>2 ) tex->DrawTextNDC( 0.2,0.25, Form("3rd : (%4.2f, %4.2f, %4.2f, %2.2f, %3d)",
+								     hits_info->GetX     (hits_info->GetOrdergT(2)),
+								     hits_info->GetY     (hits_info->GetOrdergT(2)),
+								     hits_info->GetZ     (hits_info->GetOrdergT(2)),
+								     hits_info->GetPhi   (hits_info->GetOrdergT(2)),
+								     hits_info->GetVaneID(hits_info->GetOrdergT(2))
+								     ));
+      if( hits_info->GetNhits()>3 ) tex->DrawTextNDC( 0.2,0.20, Form("4th : (%4.2f, %4.2f, %4.2f, %2.2f, %3d)",
+								     hits_info->GetX     (hits_info->GetOrdergT(3)),
+								     hits_info->GetY     (hits_info->GetOrdergT(3)),
+								     hits_info->GetZ     (hits_info->GetOrdergT(3)),
+								     hits_info->GetPhi   (hits_info->GetOrdergT(3)),
+								     hits_info->GetVaneID(hits_info->GetOrdergT(3))
+								     ));
+      if( hits_info->GetNhits()>4 ) tex->DrawTextNDC( 0.2,0.15, Form("5th : (%4.2f, %4.2f, %4.2f, %2.2f, %3d)",
+								     hits_info->GetX     (hits_info->GetOrdergT(4)),
+								     hits_info->GetY     (hits_info->GetOrdergT(4)),
+								     hits_info->GetZ     (hits_info->GetOrdergT(4)),
+								     hits_info->GetPhi   (hits_info->GetOrdergT(4)),
+								     hits_info->GetVaneID(hits_info->GetOrdergT(4))
+								     ));
+      
       if( ievt!=nevt-1 && !gROOT->IsBatch() ){
 	can_1evt->Update();
 	//hits_info->Test();
 	can_1evt->WaitPrimitive();
       }
+
       if( fl_batch==2 ) can_1evt->Print("pic/tracking.pdf");
 
       cnt_show++;
