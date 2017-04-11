@@ -309,7 +309,7 @@ void HitsArray::CalcHoughResidual_phiz(){
       Double_t residual = m_Z.at(ivec) - ( par0+par1*m_Phi.at(ivec) );
       hist_resi_phiz->Fill( residual );
       if( TMath::Abs(residual) < 10 ) m_close_hough_phiz.at(ivec) = iline;
-      //std::cout << "               ivec = " << ivec << ", residual = " << residual << " : Phi = " << m_Phi.at(ivec) << ", Z = " << m_Z.at(ivec) << std::endl;
+      //std::cout << "              ivec = " << ivec << ", residual = " << residual << " : Phi = " << m_Phi.at(ivec) << ", Z = " << m_Z.at(ivec) << std::endl;
     }
     m_hist_hough_phiz_resi.push_back( hist_resi_phiz );
   }
