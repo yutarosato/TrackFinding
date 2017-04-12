@@ -58,10 +58,13 @@ void HitsArray::ClearEvent(){
   m_order_VaneID.clear();
   m_order_gT.clear();
   
-  m_hough_phiz_par0.clear();
-  m_hough_phiz_par1.clear();
   m_hough_phiz_rho.clear();
   m_hough_phiz_theta.clear();
+
+  m_hough_phiz_par0.clear();
+  m_hough_phiz_par1.clear();
+  m_hough_phiz_rho_max.clear();
+  m_hough_phiz_theta_max.clear();
 
   for( Int_t ivec=0; ivec<m_hist_hough_phiz.size       (); ivec++ ) delete m_hist_hough_phiz.at       (ivec);
   for( Int_t ivec=0; ivec<m_hist_hough_phiz_slope_offset.size (); ivec++ ) delete m_hist_hough_phiz_slope_offset.at (ivec);
@@ -167,9 +170,12 @@ void HitsArray::CalcOrder(){
 }
 
 void HitsArray::HoughTransform_phiz(){
-  TH2D* hist_hough_phiz = new TH2D( Form("hist_hough_phiz_%d",m_hist_hough_phiz.size()), "Hough(#phi-Z #rightarrow #theta-#rho);#theta [#circ];#rho [mm]", 180, 0, 180, 1000, -500, 500 );
+  TH2D* hist_hough_phiz = new TH2D( Form("hist_hough_phiz_%d",m_hist_hough_phiz.size()), Form("Hough%d(#phi-Z#rightarrow#theta-#rho);#theta [#circ];#rho [mm]",m_hist_hough_phiz.size()), 180, 0, 180, 1000, -500, 500 );
+  m_hough_phiz_rho.clear();
+  m_hough_phiz_theta.clear();
 
   for( Int_t ivec=0; ivec<m_X.size(); ivec++ ){
+    std::vector<Double_t> tmp_vector;
     //if( m_Z.at(ivec)<-100 || m_Z.at(ivec)> 100 ){ // tmppppppp
     //m_fl_hough_phiz.at(ivec) = 0;
     //continue;
@@ -181,26 +187,49 @@ void HitsArray::HoughTransform_phiz(){
       Double_t rho = (m_Phi.at(ivec)*180/TMath::Pi()*TMath::Cos((double)istep*TMath::Pi()/180)
 		      +m_Z.at(ivec)*TMath::Sin((double)istep*TMath::Pi()/180));
       Double_t theta = istep;
-      if( theta < 30.0 || theta > 150 ) continue; // tmpppppp
+      tmp_vector.push_back( rho );
+      //if( theta < 30.0 || theta > 150 ) continue; // tmpppppp
       hist_hough_phiz->Fill( theta+1.0e-5, rho );
     }
+    m_hough_phiz_rho.push_back( tmp_vector );
   }
-
+  for( Int_t istep=0; istep<m_hough_nstep_theta; istep++ ) m_hough_phiz_theta.push_back(istep);
   m_hist_hough_phiz.push_back( hist_hough_phiz );
   
   return;
 }
 
 
-void HitsArray::HoughFit_phiz(){
+Int_t HitsArray::HoughFit_phiz(){
+  TH1D* hist_hough_phiz_slope        = new TH1D( Form("hist_hough_phiz_slope_%d",       m_hist_hough_phiz_slope.size ()),       "Slope at hough-point(#phi-Z);Slope",               100,  -10,  10 );
+  TH1D* hist_hough_phiz_offset       = new TH1D( Form("hist_hough_phiz_offset_%d",      m_hist_hough_phiz_offset.size()),       "Offset at hough-point(#phi-Z);Offset",             100, -100, 100 );
+  TH2D* hist_hough_phiz_slope_offset = new TH2D( Form("hist_hough_phiz_slope_offset_%d",m_hist_hough_phiz_slope_offset.size()), "Slope-Offset at hough-point(#phi-Z);Slope;Offset", 100,  -10,  10, 100, -100, 100 );
   // Search Line
   Int_t max_xbin, max_ybin, max_zbin;
   m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetMaximumBin(max_xbin,max_ybin, max_zbin);
-  // must add break point;
-  Int_t entry = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetBinContent(max_xbin,max_ybin);
-  
   Double_t rho   = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetYaxis()->GetBinLowEdge(max_ybin) + m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinWidth(max_ybin)/2.0;
   Double_t theta = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinLowEdge(max_xbin) + m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinWidth(max_xbin)/2.0;
+  // testing
+  for( Int_t ivec=0; ivec<m_hough_phiz_rho.size(); ivec++ ){
+    Double_t offset = m_hough_phiz_rho.at(ivec).at(max_xbin-1) - rho;
+    if( TMath::Abs(offset) >100 ) continue;
+    Double_t del_rho   = m_hough_phiz_rho.at(ivec).at( max_xbin==1 ? max_xbin : max_xbin-1 ) - m_hough_phiz_rho.at(ivec).at( max_xbin==1 ? max_xbin-1 : max_xbin-2);
+    Double_t del_theta = m_hough_phiz_theta.at       ( max_xbin==1 ? max_xbin : max_xbin-1 ) - m_hough_phiz_theta.at       ( max_xbin==1 ? max_xbin-1 : max_xbin-2);
+    Double_t slope = del_rho/del_theta;
+    hist_hough_phiz_slope ->Fill(slope);
+    hist_hough_phiz_offset->Fill(offset);
+    hist_hough_phiz_slope_offset->Fill(slope,offset);
+  }
+  
+  m_hist_hough_phiz_slope.push_back( hist_hough_phiz_slope );
+  m_hist_hough_phiz_offset.push_back( hist_hough_phiz_offset );
+  m_hist_hough_phiz_slope_offset.push_back( hist_hough_phiz_slope_offset );  
+  // must add break point;
+  Int_t entry = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetBinContent(max_xbin,max_ybin);
+
+  if( entry < 5 ) return -1;
+  //+++++++++++++++++++++++++++++++
+
   Double_t par0 =  rho/TMath::Sin(theta*TMath::Pi()/180.0);
   Double_t par1 = -1.0/TMath::Tan(theta*TMath::Pi()/180.0)*180.0/TMath::Pi();
   m_hough_phiz_par0.push_back( par0 );
@@ -212,182 +241,185 @@ void HitsArray::HoughFit_phiz(){
   func_hough_phiz->SetParameter( 1, m_hough_phiz_par1.at(m_hough_phiz_par0.size()-1) );
   m_func_hough_phiz.push_back( func_hough_phiz );
 
-  return;
+  m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->SetTitle( Form("%s, (#theta,#rho) = (%.1f, %.1f)",m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetTitle(),theta,rho) );
+
+  return 1;
 }
 
-void HitsArray::CalcHoughResidual_phiz(){
-  for( Int_t iline=m_hough_phiz_par0.size()-1; iline>=0; iline-- ){
-    TH1D* hist_resi_phiz = new TH1D( Form("hist_resi_phiz_%d",iline),  Form("Residual_%d(#phi-Z);",iline),  100, -20, 20 );
-    Double_t par0 = m_hough_phiz_par0.at(iline);
-    Double_t par1 = m_hough_phiz_par1.at(iline);
-    //std::cout << "   par0 = " << par0 << ", par1 = " << par1 << std::endl;
-    hist_resi_phiz->SetLineColor( m_hist_hough_phiz_resi.size()+1 );
-    for( Int_t ivec=0; ivec<m_X.size(); ivec++ ){
-      Double_t residual = m_Z.at(ivec) - ( par0+par1*m_Phi.at(ivec) );
-      hist_resi_phiz->Fill( residual );
-      if( TMath::Abs(residual) < 10 ) m_close_hough_phiz.at(ivec) = iline;
-      //std::cout << "              ivec = " << ivec << ", residual = " << residual << " : Phi = " << m_Phi.at(ivec) << ", Z = " << m_Z.at(ivec) << std::endl;
-    }
-    m_hist_hough_phiz_resi.push_back( hist_resi_phiz );
+Int_t HitsArray::CalcHoughResidual_phiz(){
+  if( !m_hough_phiz_par0.size() ) return -1;
+  Int_t iline = m_hough_phiz_par0.size()-1;
+  TH1D* hist_resi_phiz = new TH1D( Form("hist_resi_phiz_%d",iline),  Form("Residual_%d(#phi-Z);",iline),  100, -20, 20 );
+  Double_t par0 = m_hough_phiz_par0.at(iline);
+  Double_t par1 = m_hough_phiz_par1.at(iline);
+  //std::cout << "   par0 = " << par0 << ", par1 = " << par1 << std::endl;
+  hist_resi_phiz->SetLineColor( m_hist_hough_phiz_resi.size()+1 );
+  for( Int_t ivec=0; ivec<m_X.size(); ivec++ ){
+    Double_t residual = m_Z.at(ivec) - ( par0+par1*m_Phi.at(ivec) );
+    hist_resi_phiz->Fill( residual );
+    //if( m_cluster_No.at(ivec) >= 0 ) continue; // to be check if this line is needed or not
+    if( TMath::Abs(residual) < 10 ) m_close_hough_phiz.at(ivec) = iline;
+    //std::cout << "              ivec = " << ivec << ", residual = " << residual << " : Phi = " << m_Phi.at(ivec) << ", Z = " << m_Z.at(ivec) << std::endl;
   }
-  return;
+  m_hist_hough_phiz_resi.push_back( hist_resi_phiz );
+
+  return 1;
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-void HitsArray::Clustering( Int_t fl_message ){
+Int_t HitsArray::Clustering( Int_t fl_message ){
   if( fl_message > 1 ) std::cout << "Clustering Start" << std::endl
 				 << "Nline = " << m_hough_phiz_par0.size() << std::endl;
-
-  for( Int_t iline=0; iline<m_hough_phiz_par0.size(); iline++ ){ // START LINE-LOOP
-    if( fl_message > 1 ) std::cout << "   iline = " << iline << ", Vane-ID : ";
-
-    std::vector<Int_t> cluster_index; // index for Vane-ID order
-    for( Int_t ivane=0; ivane<m_order_VaneID.size(); ivane++ ){
-      if( m_close_hough_phiz.at(m_order_VaneID.at(ivane))==iline ){
-	m_clusterNo.at( m_order_VaneID.at(ivane) ) = iline;
-	cluster_index.push_back(ivane);
-	if( fl_message > 1 ) std::cout << m_VaneID.at( m_order_VaneID.at(ivane) ) << ", ";
-      }
-    }
-    if( fl_message > 1 ) std::cout << "seed sluster : " << cluster_index.size() << std::endl;
-    if( cluster_index.size()<4 ) return;
-
-    // forward ++++++++++++++++++++++++++;
-    Int_t cnt_miss_forward = 0;
-    Double_t pre_target_VaneID = -999;
-    Double_t x0;
-    Double_t y0;
-    Double_t r;
-    Double_t dphi;
-    while( cnt_miss_forward < 5 ){
-      Double_t extrap_r;
-      Double_t extrap_z;
-      Int_t index1 = m_order_VaneID.at(cluster_index.at(cluster_index.size()-3));
-      Int_t index2 = m_order_VaneID.at(cluster_index.at(cluster_index.size()-2));
-      Int_t index3 = m_order_VaneID.at(cluster_index.at(cluster_index.size()-1));
-      Int_t current_VaneID = m_VaneID.at(index3);
-      Int_t target_VaneID  = (pre_target_VaneID < 0 ? m_VaneID.at(index3)+1 : pre_target_VaneID+1 );
-      if( fl_message > 1 ) std::cout << std::endl
-				     << "Extrapolate(forward) from "
-				     << m_VaneID.at( index1 ) << "&"
-				     << m_VaneID.at( index2 ) << "&"
-				     << m_VaneID.at( index3 ) << std::endl;
-      
-      // Find next hit point by extrapolation
-      while(1){
-	if( target_VaneID==m_geom_nvane ) target_VaneID = 0;
-	if( current_VaneID==target_VaneID ){
-	  target_VaneID = -999;
-	  break;
-	}else if( Extrapolation( index1, index2, index3, target_VaneID, extrap_r, extrap_z, x0, y0, r, dphi )>0 ){
-	  break;
-	}else{
-	  target_VaneID++;
-	}
-      }
-      if( target_VaneID < 0 ) break;
-      pre_target_VaneID = target_VaneID;
-      if( fl_message > 1 ) std::cout << "     target VaneID = "
-				     << target_VaneID << " : R = "
-				     << extrap_r      << ", Z = "
-				     << extrap_z      << " : x0 = "
-				     << x0            << ", y0 = "
-				     << y0            << ", r = "
-				     << r             << ", dphi = "
-				     << dphi          << std::endl;
-      
-      // compare actual hits with extrapolated point.
-      Double_t dev_min   = 10000;
-      Double_t index_min = -999;
-      for( Int_t ivane=0; ivane<m_order_VaneID.size(); ivane++ ){
-	if( m_VaneID.at(m_order_VaneID.at(ivane))!=target_VaneID ) continue;
-	if( m_clusterNo.at(m_order_VaneID.at(ivane))>=0          ) continue;
-	Double_t dev_r = TMath::Abs( extrap_r - m_R.at(m_order_VaneID.at(ivane)) );
-	Double_t dev_z = TMath::Abs( extrap_z - m_Z.at(m_order_VaneID.at(ivane)) );
-	if( fl_message > 1 ) std::cout << "       dev(r) = " << dev_r << ", dev(z) = " << dev_z << ", dev_min = " << sqrt(pow(dev_r,2)+pow(dev_z,2)) << std::endl;
-	if( dev_min > sqrt(pow(dev_r,2)+pow(dev_z,2)) ){
-	  dev_min   = sqrt(pow(dev_r,2)+pow(dev_z,2));
-	  index_min = ivane;
-	}
-      }
-      if( dev_min < 5.0*dphi || dev_min < 10 ){ // tmpppp
-	m_clusterNo.at( m_order_VaneID.at(index_min) ) = iline;
-	cluster_index.push_back(index_min);
-	cnt_miss_forward = 0;
-	if( fl_message > 1 ) std::cout << "       => added the hit into the cluster" << std::endl;
-      }else{
-	if( !(extrap_r < m_geom_r_inner || extrap_r > m_geom_r_outer) ) cnt_miss_forward++;
-	if( fl_message > 1 ) std::cout << "       => can not find hit points by extrapolation : dev_min = " << dev_min << ", cnt_miss_foward = " << cnt_miss_forward << std::endl;
-      }
-    }
-    // backward ++++++++++++++++++++++++++;
-    Int_t cnt_miss_backward = 0;
-    pre_target_VaneID = -999;
-    while( cnt_miss_backward < 5 ){
-      Double_t extrap_r;
-      Double_t extrap_z;
-      Int_t index1 = m_order_VaneID.at(cluster_index.at(2));
-      Int_t index2 = m_order_VaneID.at(cluster_index.at(1));
-      Int_t index3 = m_order_VaneID.at(cluster_index.at(0));
-      Int_t current_VaneID = m_VaneID.at(index3);
-      Int_t target_VaneID  = (pre_target_VaneID < 0 ? m_VaneID.at(index3)-1 : pre_target_VaneID-1 );
-      if( fl_message > 1 ) std::cout << std::endl
-				     << "Extrapolate(backward) from "
-				     << m_VaneID.at( index1 ) << "&"
-				     << m_VaneID.at( index2 ) << "&"
-				     << m_VaneID.at( index3 ) << std::endl;
-      // Find next hit point by extrapolation
-      while(1){
-	if( target_VaneID==-1 ) target_VaneID = m_geom_nvane-1;
-	if( current_VaneID==target_VaneID                                                        ){
-	  target_VaneID = -999;
-	  break;
-	}else if( Extrapolation( index1, index2, index3, target_VaneID, extrap_r, extrap_z, x0, y0, r, dphi )>0 ){
-	  break;
-	}else{
-	  target_VaneID--;
-	}
-      }
-      if( target_VaneID < 0 ) break;
-      pre_target_VaneID = target_VaneID;
-      if( fl_message > 1 ) std::cout << "     target VaneID = "
-				     << target_VaneID << " : R = "
-				     << extrap_r      << ", Z = "
-				     << extrap_z      << " : x0 = "
-				     << x0            << ", y0 = "
-				     << y0            << ", r = "
-				     << r             << ", dphi = "
-				     << dphi          << std::endl;
-
-      // compare actual hits with extrapolated point.
-      Double_t dev_min   = 10000;
-      Double_t index_min = -999;
-      for( Int_t ivane=0; ivane<m_order_VaneID.size(); ivane++ ){
-	if( m_VaneID.at(m_order_VaneID.at(ivane))!=target_VaneID ) continue;
-	if( m_clusterNo.at(m_order_VaneID.at(ivane))>=0          ) continue;
-	Double_t dev_r = TMath::Abs( extrap_r - m_R.at(m_order_VaneID.at(ivane)) );
-	Double_t dev_z = TMath::Abs( extrap_z - m_Z.at(m_order_VaneID.at(ivane)) );
-	if( fl_message > 1 ) std::cout << "       dev(r) = " << dev_r << ", dev(z) = " << dev_z << ", dev_min = " << sqrt(pow(dev_r,2)+pow(dev_z,2)) << std::endl;
-	if( dev_min > sqrt(pow(dev_r,2)+pow(dev_z,2)) ){
-	  dev_min   = sqrt(pow(dev_r,2)+pow(dev_z,2));
-	  index_min = ivane;
-	}
-      }
-      if( dev_min < 5.0*dphi || dev_min < 10 ){ // tmpppp
-	m_clusterNo.at( m_order_VaneID.at(index_min) ) = iline;
-	cluster_index.insert(cluster_index.begin(), index_min);
-	cnt_miss_backward = 0;
-	if( fl_message > 1 ) std::cout << "       => added the hit into the cluster" << std::endl;
-      }else{
-	if( !(extrap_r < m_geom_r_inner || extrap_r > m_geom_r_outer) ) cnt_miss_backward++;
-	if( fl_message > 1 ) std::cout << "can not find hit points by extrapolation : dev_min = " << dev_min << std::endl;
-      }
-    }
-    
-  } // END LINE-LOOP
-  if( fl_message > 1 ) std::cout << "Clustering finish" << std::endl;
+  if( !m_hough_phiz_par0.size() ) return -1;
+  Int_t iline = m_hough_phiz_par0.size()-1;
+  if( fl_message > 1 ) std::cout << "   iline = " << iline << ", Vane-ID : ";
   
-  return;
+  std::vector<Int_t> cluster_index; // index for Vane-ID order
+  for( Int_t ivane=0; ivane<m_order_VaneID.size(); ivane++ ){
+    if( m_close_hough_phiz.at(m_order_VaneID.at(ivane))==iline ){
+      m_clusterNo.at( m_order_VaneID.at(ivane) ) = iline;
+      cluster_index.push_back(ivane);
+      if( fl_message > 1 ) std::cout << m_VaneID.at( m_order_VaneID.at(ivane) ) << ", ";
+    }
+  }
+  if( fl_message > 1 ) std::cout << "seed sluster : " << cluster_index.size() << std::endl;
+  if( cluster_index.size()<4 ) return -1;
+  
+  // forward ++++++++++++++++++++++++++;
+  Int_t cnt_miss_forward = 0;
+  Double_t pre_target_VaneID = -999;
+  Double_t x0;
+  Double_t y0;
+  Double_t r;
+  Double_t dphi;
+  while( cnt_miss_forward < 5 ){
+    Double_t extrap_r;
+    Double_t extrap_z;
+    Int_t index1 = m_order_VaneID.at(cluster_index.at(cluster_index.size()-3));
+    Int_t index2 = m_order_VaneID.at(cluster_index.at(cluster_index.size()-2));
+    Int_t index3 = m_order_VaneID.at(cluster_index.at(cluster_index.size()-1));
+    Int_t current_VaneID = m_VaneID.at(index3);
+    Int_t target_VaneID  = (pre_target_VaneID < 0 ? m_VaneID.at(index3)+1 : pre_target_VaneID+1 );
+    if( fl_message > 1 ) std::cout << std::endl
+				   << "Extrapolate(forward) from "
+				   << m_VaneID.at( index1 ) << "&"
+				   << m_VaneID.at( index2 ) << "&"
+				   << m_VaneID.at( index3 ) << std::endl;
+    
+    // Find next hit point by extrapolation
+    while(1){
+      if( target_VaneID==m_geom_nvane ) target_VaneID = 0;
+      if( current_VaneID==target_VaneID ){
+	target_VaneID = -999;
+	break;
+      }else if( Extrapolation( index1, index2, index3, target_VaneID, extrap_r, extrap_z, x0, y0, r, dphi )>0 ){
+	break;
+      }else{
+	target_VaneID++;
+      }
+    }
+    if( target_VaneID < 0 ) break;
+    pre_target_VaneID = target_VaneID;
+    if( fl_message > 1 ) std::cout << "     target VaneID = "
+				   << target_VaneID << " : R = "
+				   << extrap_r      << ", Z = "
+				   << extrap_z      << " : x0 = "
+				   << x0            << ", y0 = "
+				   << y0            << ", r = "
+				   << r             << ", dphi = "
+				   << dphi          << std::endl;
+    
+    // compare actual hits with extrapolated point.
+    Double_t dev_min   = 10000;
+    Double_t index_min = -999;
+    for( Int_t ivane=0; ivane<m_order_VaneID.size(); ivane++ ){
+      if( m_VaneID.at(m_order_VaneID.at(ivane))!=target_VaneID ) continue;
+      if( m_clusterNo.at(m_order_VaneID.at(ivane))>=0          ) continue;
+      Double_t dev_r = TMath::Abs( extrap_r - m_R.at(m_order_VaneID.at(ivane)) );
+      Double_t dev_z = TMath::Abs( extrap_z - m_Z.at(m_order_VaneID.at(ivane)) );
+      if( fl_message > 1 ) std::cout << "       dev(r) = " << dev_r << ", dev(z) = " << dev_z << ", dev_min = " << sqrt(pow(dev_r,2)+pow(dev_z,2)) << std::endl;
+      if( dev_min > sqrt(pow(dev_r,2)+pow(dev_z,2)) ){
+	dev_min   = sqrt(pow(dev_r,2)+pow(dev_z,2));
+	index_min = ivane;
+      }
+    }
+    if( dev_min < 5.0*dphi || dev_min < 10 ){ // tmpppp
+      m_clusterNo.at( m_order_VaneID.at(index_min) ) = iline;
+      cluster_index.push_back(index_min);
+      cnt_miss_forward = 0;
+      if( fl_message > 1 ) std::cout << "       => added the hit into the cluster" << std::endl;
+    }else{
+      if( !(extrap_r < m_geom_r_inner || extrap_r > m_geom_r_outer) ) cnt_miss_forward++;
+      if( fl_message > 1 ) std::cout << "       => can not find hit points by extrapolation : dev_min = " << dev_min << ", cnt_miss_foward = " << cnt_miss_forward << std::endl;
+    }
+  }
+  // backward ++++++++++++++++++++++++++;
+  Int_t cnt_miss_backward = 0;
+  pre_target_VaneID = -999;
+  while( cnt_miss_backward < 5 ){
+    Double_t extrap_r;
+    Double_t extrap_z;
+    Int_t index1 = m_order_VaneID.at(cluster_index.at(2));
+    Int_t index2 = m_order_VaneID.at(cluster_index.at(1));
+    Int_t index3 = m_order_VaneID.at(cluster_index.at(0));
+    Int_t current_VaneID = m_VaneID.at(index3);
+    Int_t target_VaneID  = (pre_target_VaneID < 0 ? m_VaneID.at(index3)-1 : pre_target_VaneID-1 );
+    if( fl_message > 1 ) std::cout << std::endl
+				   << "Extrapolate(backward) from "
+				   << m_VaneID.at( index1 ) << "&"
+				   << m_VaneID.at( index2 ) << "&"
+				   << m_VaneID.at( index3 ) << std::endl;
+    // Find next hit point by extrapolation
+    while(1){
+      if( target_VaneID==-1 ) target_VaneID = m_geom_nvane-1;
+      if( current_VaneID==target_VaneID                                                        ){
+	target_VaneID = -999;
+	break;
+      }else if( Extrapolation( index1, index2, index3, target_VaneID, extrap_r, extrap_z, x0, y0, r, dphi )>0 ){
+	break;
+      }else{
+	target_VaneID--;
+      }
+    }
+    if( target_VaneID < 0 ) break;
+    pre_target_VaneID = target_VaneID;
+    if( fl_message > 1 ) std::cout << "     target VaneID = "
+				   << target_VaneID << " : R = "
+				   << extrap_r      << ", Z = "
+				   << extrap_z      << " : x0 = "
+				   << x0            << ", y0 = "
+				   << y0            << ", r = "
+				   << r             << ", dphi = "
+				   << dphi          << std::endl;
+    
+    // compare actual hits with extrapolated point.
+    Double_t dev_min   = 10000;
+    Double_t index_min = -999;
+    for( Int_t ivane=0; ivane<m_order_VaneID.size(); ivane++ ){
+      if( m_VaneID.at(m_order_VaneID.at(ivane))!=target_VaneID ) continue;
+      if( m_clusterNo.at(m_order_VaneID.at(ivane))>=0          ) continue;
+      Double_t dev_r = TMath::Abs( extrap_r - m_R.at(m_order_VaneID.at(ivane)) );
+      Double_t dev_z = TMath::Abs( extrap_z - m_Z.at(m_order_VaneID.at(ivane)) );
+      if( fl_message > 1 ) std::cout << "       dev(r) = " << dev_r << ", dev(z) = " << dev_z << ", dev_min = " << sqrt(pow(dev_r,2)+pow(dev_z,2)) << std::endl;
+      if( dev_min > sqrt(pow(dev_r,2)+pow(dev_z,2)) ){
+	dev_min   = sqrt(pow(dev_r,2)+pow(dev_z,2));
+	index_min = ivane;
+      }
+    }
+    if( dev_min < 5.0*dphi || dev_min < 10 ){ // tmpppp
+      m_clusterNo.at( m_order_VaneID.at(index_min) ) = iline;
+      cluster_index.insert(cluster_index.begin(), index_min);
+      cnt_miss_backward = 0;
+      if( fl_message > 1 ) std::cout << "       => added the hit into the cluster" << std::endl;
+    }else{
+      if( !(extrap_r < m_geom_r_inner || extrap_r > m_geom_r_outer) ) cnt_miss_backward++;
+      if( fl_message > 1 ) std::cout << "can not find hit points by extrapolation : dev_min = " << dev_min << std::endl;
+    }
+  }
+  
+  if( fl_message > 1 ) std::cout << "Clustering finish" << std::endl;
+
+  return 1;
 }
 
 

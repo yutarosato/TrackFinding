@@ -7,6 +7,15 @@ const Int_t    threshold_success = 3; // Hit definition : >= threshold_success/r
 const Int_t    range_success     = 3;
 const Int_t    fl_batch          = 0; // 0(show), 1(batch), 2(batch&save)
 
+ // seed of cluster
+std::vector<TGraph*> vg_seed_hit_xy;
+std::vector<TGraph*> vg_seed_hit_phiz;
+// cluster
+std::vector<TGraph*> vg_clustered_hit_xy;   // clustered hits
+std::vector<TGraph*> vg_clustered_hit_phiz; // clustered hits
+std::vector<TGraph*> vg_missing_hit_xy;     // missing hits
+std::vector<TGraph*> vg_missing_hit_phiz;   // missing hits
+
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Int_t main( Int_t argc, Char_t** argv ){
   gROOT->SetBatch(fl_batch);
@@ -38,8 +47,8 @@ Int_t main( Int_t argc, Char_t** argv ){
 
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   // Make Canvas
-  TCanvas* can_1evt = new TCanvas( "can_1evt", "can_1evt", 1600, 750 );
-  can_1evt->Divide(4,2);
+  TCanvas* can_1evt = new TCanvas( "can_1evt", "can_1evt", 1400, 900 );
+  can_1evt->Divide(4,3);
   can_1evt->Draw();
   Int_t cnt_show = 0;
 
@@ -101,25 +110,18 @@ Int_t main( Int_t argc, Char_t** argv ){
     // Hits
     TGraph* g_hitpoint_xy          = new TGraph(); // all (e+,e-,gamma)
     TGraph* g_hitpoint_phiz        = new TGraph(); // all (e+,e-,gamma)
-    TGraph* g_hitpoint_vanez       = new TGraph(); // all (e+,e-,gamma)
     TGraph* g_hitpoint_xy_other    = new TGraph(); // except e+
     TGraph* g_hitpoint_phiz_other  = new TGraph(); // except e+
-    TGraph* g_hitpoint_vanez_other = new TGraph(); // except e+
-    g_hitpoint_xy         ->SetMarkerColor(3);
-    g_hitpoint_phiz       ->SetMarkerColor(3);
-    g_hitpoint_vanez      ->SetMarkerColor(3);
+    g_hitpoint_xy         ->SetMarkerColor(1);
+    g_hitpoint_phiz       ->SetMarkerColor(1);
     g_hitpoint_xy         ->SetMarkerStyle(24);
     g_hitpoint_phiz       ->SetMarkerStyle(24);
-    g_hitpoint_vanez      ->SetMarkerStyle(24);
     g_hitpoint_xy_other   ->SetMarkerColor(4);
     g_hitpoint_phiz_other ->SetMarkerColor(4);
-    g_hitpoint_vanez_other->SetMarkerColor(4);
     g_hitpoint_xy_other   ->SetMarkerStyle(24);
     g_hitpoint_phiz_other ->SetMarkerStyle(24);
-    g_hitpoint_vanez_other->SetMarkerStyle(24);
-    g_hitpoint_xy_other   ->SetLineWidth(2);
-    g_hitpoint_phiz_other ->SetLineWidth(2);
-    g_hitpoint_vanez_other->SetLineWidth(2);
+    g_hitpoint_xy_other   ->SetLineWidth(5);
+    g_hitpoint_phiz_other ->SetLineWidth(5);
 
     Int_t cnt_hit=0;
     if( fl_message && (cnt_show < fl_show || ievt==nevt-1) ) std::cout << "Nvec = " << tb_pos_x->size() << std::endl;
@@ -141,14 +143,12 @@ Int_t main( Int_t argc, Char_t** argv ){
     for( Int_t ihit=0; ihit<hits_info->GetNhits(); ihit++ ){
       g_hitpoint_xy       ->SetPoint( g_hitpoint_xy       ->GetN(), hits_info->GetX     (ihit), hits_info->GetY(ihit) );
       g_hitpoint_phiz     ->SetPoint( g_hitpoint_phiz     ->GetN(), hits_info->GetPhi   (ihit), hits_info->GetZ(ihit) );
-      g_hitpoint_vanez    ->SetPoint( g_hitpoint_vanez    ->GetN(), hits_info->GetVaneID(ihit), hits_info->GetZ(ihit) );
       g_hitpoint_xy_int   ->SetPoint( g_hitpoint_xy_int   ->GetN(), hits_info->GetX     (ihit), hits_info->GetY(ihit) );
       g_hitpoint_phiz_int ->SetPoint( g_hitpoint_phiz_int ->GetN(), hits_info->GetPhi   (ihit), hits_info->GetZ(ihit) );
       g_hitpoint_vanez_int->SetPoint( g_hitpoint_vanez_int->GetN(), hits_info->GetVaneID(ihit), hits_info->GetZ(ihit) );
       if( hits_info->GetpID(ihit)!=2 ){
 	g_hitpoint_xy_other   ->SetPoint( g_hitpoint_xy_other   ->GetN(), hits_info->GetX     (ihit), hits_info->GetY(ihit) );
 	g_hitpoint_phiz_other ->SetPoint( g_hitpoint_phiz_other ->GetN(), hits_info->GetPhi   (ihit), hits_info->GetZ(ihit) );
-	g_hitpoint_vanez_other->SetPoint( g_hitpoint_vanez_other->GetN(), hits_info->GetVaneID(ihit), hits_info->GetZ(ihit) );
       }
       
     }
@@ -158,50 +158,132 @@ Int_t main( Int_t argc, Char_t** argv ){
     if( td_DtEnergy[1] > 150 && cnt_hit > 0 ) cnt_signal++;
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    // Hough Transformation (phi-Z)
-    hits_info->HoughTransform_phiz();
-    hits_info->HoughFit_phiz();
-    hits_info->CalcHoughResidual_phiz();
-
-    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    // select the hit-points close to the Hough-Fit-line
-    TGraph* g_hitpoint_xy_close    = new TGraph();
-    TGraph* g_hitpoint_phiz_close  = new TGraph();
-    TGraph* g_hitpoint_vanez_close = new TGraph();
-    g_hitpoint_xy_close   ->SetMarkerColor(3);
-    g_hitpoint_phiz_close ->SetMarkerColor(3);
-    g_hitpoint_vanez_close->SetMarkerColor(3);
-    g_hitpoint_xy_close   ->SetMarkerStyle(20);
-    g_hitpoint_phiz_close ->SetMarkerStyle(20);
-    g_hitpoint_vanez_close->SetMarkerStyle(20);
-    
-    for( Int_t ivec=0; ivec<hits_info->GetNhits(); ivec++ ){
-      if( hits_info->GetClose_Hough_phiz(ivec)>=0 ){
-	g_hitpoint_xy_close   ->SetPoint( g_hitpoint_xy_close   ->GetN(), hits_info->GetX     (ivec), hits_info->GetY(ivec) );
-	g_hitpoint_phiz_close ->SetPoint( g_hitpoint_phiz_close ->GetN(), hits_info->GetPhi   (ivec), hits_info->GetZ(ivec) );
-	g_hitpoint_vanez_close->SetPoint( g_hitpoint_vanez_close->GetN(), hits_info->GetVaneID(ivec), hits_info->GetZ(ivec) );
-      }
-    }
-    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    //clustering
+    TText* tex = new TText();
+    tex->SetTextColor(3);
+    tex->SetTextSize(0.05);
+    //hits_info->Print             (fl_message*((Int_t)(cnt_show<fl_show))); // tmppppp
     //hits_info->Print_VaneID_Order(fl_message); // tmppppp
-    hits_info->Clustering(fl_message *((Int_t)(cnt_show < fl_show)));
-    
-    TGraph* g_hitcluster_phiz = new TGraph();
-    g_hitcluster_phiz->SetMarkerColor(3);
-    g_hitcluster_phiz->SetMarkerStyle(20);
+    //hits_info->Print_gT_Order    (fl_message); // tmppppp
 
-    for( Int_t ivec=0; ivec<hits_info->GetNhits(); ivec++ ){
-      if( hits_info->GetClusterNo( ivec )!=0 ) continue;
-      g_hitcluster_phiz->SetPoint( g_hitcluster_phiz->GetN(), hits_info->GetPhi(ivec), hits_info->GetZ(ivec) );
+    if( ((cnt_show < fl_show || ievt==nevt-1) || fl_batch==2) && td_DtEnergy[1] > th_show_energy ){
+      //hits_info->Print(fl_message); // tmppppp
+      can_1evt->cd(1);
+      gPad->DrawFrame(-350,-350,350,350, Form("EvtNo:%d, E(e+)=%.1f MeV, P(e+) = (%.1f, %.1f, %.1f);X [mm];Y [mm]",td_eventNum,td_DtEnergy[1],td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]));
+      g_orbit      ->Draw("Lsame");
+      g_decpoint_xy->Draw("Psame");
+      g_decvec_xy  ->Draw();
+      if( g_hitpoint_xy      ->GetN() ) g_hitpoint_xy      ->Draw("Psame");
+      if( g_hitpoint_xy_other->GetN() ) g_hitpoint_xy_other->Draw("Psame");
+
+      can_1evt->cd(2);
+      gPad           ->DrawFrame(0.0,-250,2.0*TMath::Pi(),250, Form("EvtNo:%d, E(e+)=%.1f MeV, P(e+) = (%.1f, %.1f, %.1f);#phi [rad];Z [mm]",td_eventNum,td_DtEnergy[1],td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]));
+      g_decpoint_phiz->Draw("Psame");
+      g_decvec_phiz  ->Draw();
+      if( g_hitpoint_phiz      ->GetN() ) g_hitpoint_phiz      ->Draw("Psame");
+      if( g_hitpoint_phiz_other->GetN() ) g_hitpoint_phiz_other->Draw("Psame");
     }
+    
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    Int_t cnt_cycle = 0;
+    while(1){ // START-WHILE
+      // Hough Transformation (phi-Z)
+      hits_info->HoughTransform_phiz();
+
+      // Search Hough-fit line
+      if( hits_info->HoughFit_phiz()          < 0 ) break;
+
+      // Find hit points close to Hough-fit line
+      if( hits_info->CalcHoughResidual_phiz() < 0 ) break;
+
+      // Make TGraph for cluster-seed
+      TGraph* g_seed_hit_xy    = new TGraph();
+      TGraph* g_seed_hit_phiz  = new TGraph();
+      g_seed_hit_xy  ->SetMarkerColor(hits_info->GetNHoughLines()+1);
+      g_seed_hit_phiz->SetMarkerColor(hits_info->GetNHoughLines()+1);
+      g_seed_hit_xy  ->SetMarkerStyle(20);
+      g_seed_hit_phiz->SetMarkerStyle(20);
+      for( Int_t ivec=0; ivec<hits_info->GetNhits(); ivec++ ){
+	if( hits_info->GetClose_Hough_phiz(ivec)!=hits_info->GetNHoughLines()-1 ) continue;
+	g_seed_hit_xy  ->SetPoint( g_seed_hit_xy  ->GetN(), hits_info->GetX     (ivec), hits_info->GetY(ivec) );
+	g_seed_hit_phiz->SetPoint( g_seed_hit_phiz->GetN(), hits_info->GetPhi   (ivec), hits_info->GetZ(ivec) );
+      }
+      vg_seed_hit_xy.push_back  ( g_seed_hit_xy   );
+      vg_seed_hit_phiz.push_back( g_seed_hit_phiz );
+
+      //clustering
+      if( hits_info->Clustering(fl_message *((Int_t)(cnt_show < fl_show))) < 0 ) break;
+
+      // Make TGraph for clustered hits
+      TGraph* g_clustered_hit_xy   = new TGraph();
+      TGraph* g_clustered_hit_phiz = new TGraph();
+      g_clustered_hit_xy  ->SetMarkerColor(hits_info->GetNHoughLines()+1);
+      g_clustered_hit_phiz->SetMarkerColor(hits_info->GetNHoughLines()+1);
+      g_clustered_hit_xy  ->SetMarkerStyle(20);
+      g_clustered_hit_phiz->SetMarkerStyle(20);
+      TGraph* g_missing_hit_xy   = new TGraph();
+      TGraph* g_missing_hit_phiz = new TGraph();
+      g_missing_hit_xy  ->SetMarkerColor(1);
+      g_missing_hit_phiz->SetMarkerColor(1);
+      g_missing_hit_xy  ->SetMarkerStyle(24);
+      g_missing_hit_phiz->SetMarkerStyle(24);
+      
+      for( Int_t ivec=0; ivec<hits_info->GetNhits(); ivec++ ){
+	if( hits_info->GetClusterNo(ivec)<0 ){
+	  g_missing_hit_xy  ->SetPoint( g_missing_hit_xy  ->GetN(), hits_info->GetX  (ivec), hits_info->GetY(ivec) );
+	  g_missing_hit_phiz->SetPoint( g_missing_hit_phiz->GetN(), hits_info->GetPhi(ivec), hits_info->GetZ(ivec) );
+	}else{
+	  if( hits_info->GetClusterNo(ivec)!=hits_info->GetNHoughLines()-1 ) continue;
+	  g_clustered_hit_xy  ->SetPoint( g_clustered_hit_xy  ->GetN(), hits_info->GetX  (ivec), hits_info->GetY(ivec) );
+	  g_clustered_hit_phiz->SetPoint( g_clustered_hit_phiz->GetN(), hits_info->GetPhi(ivec), hits_info->GetZ(ivec) );
+	}
+      }
+      vg_clustered_hit_xy.push_back  ( g_clustered_hit_xy   );
+      vg_clustered_hit_phiz.push_back( g_clustered_hit_phiz );
+      vg_missing_hit_xy.push_back    ( g_missing_hit_xy     );
+      vg_missing_hit_phiz.push_back  ( g_missing_hit_phiz   );
+
+
+      // Draw every clustering-cycle
+      can_1evt->cd(2);
+      if( hits_info->GetNHoughLines() ) hits_info->GetFunc_Hough_phiz(hits_info->GetNHoughLines()-1)->Draw("same");
+
+      can_1evt->cd(3);
+      hits_info->GetHist_Hough_phiz(cnt_cycle)->Draw("COLZ");
+
+      can_1evt->cd(4);
+      hits_info->GetHist_Hough_phiz_Residual(hits_info->GetNHoughLines()-1)->Draw();
+
+      can_1evt->cd(5); // clustered hits on x-y plane
+      gPad->DrawFrame(-350,-350,350,350, Form("EvtNo:%d, E(e+)=%.1f MeV, P(e+) = (%.1f, %.1f, %.1f), Clustered Hits;X [mm];Y [mm]",td_eventNum,td_DtEnergy[1],td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]));
+      g_orbit      ->Draw("Lsame");
+      g_decpoint_xy->Draw("Psame");
+      g_decvec_xy  ->Draw();
+      for( Int_t ivec=0; ivec<vg_clustered_hit_xy.size(); ivec++ ){ if( vg_clustered_hit_xy.at(ivec)->GetN() ) vg_clustered_hit_xy.at(ivec)->Draw("Psame"); }
+      for( Int_t ivec=0; ivec<vg_missing_hit_xy.size  (); ivec++ ){ if( vg_missing_hit_xy.at  (ivec)->GetN() ) vg_missing_hit_xy.at  (ivec)->Draw("Psame"); }
+
+      can_1evt->cd(6); // clustered hits on phi-z plane
+      gPad           ->DrawFrame(0.0,-250,2.0*TMath::Pi(),250, Form("EvtNo:%d, E(e+)=%.1f MeV, P(e+) = (%.1f, %.1f, %.1f), Clustered Hits;#phi [rad];Z [mm]",td_eventNum,td_DtEnergy[1],td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]));
+      g_decpoint_phiz->Draw("Psame");
+      g_decvec_phiz  ->Draw();
+      for( Int_t ivec=0; ivec<vg_clustered_hit_phiz.size(); ivec++ ){ if( vg_clustered_hit_phiz.at(ivec)->GetN() ) vg_clustered_hit_phiz.at(ivec)->Draw("Psame"); }
+      for( Int_t ivec=0; ivec<vg_missing_hit_phiz.size  (); ivec++ ){ if( vg_missing_hit_phiz.at  (ivec)->GetN() ) vg_missing_hit_phiz.at  (ivec)->Draw("Psame"); }
+      for( Int_t iline=0; iline<hits_info->GetNHoughLines(); iline++ ) hits_info->GetFunc_Hough_phiz(iline)->Draw("same");
+
+      can_1evt->cd(7);
+      hits_info->GetHist_Hough_phiz_Slope(cnt_cycle)->Draw();
+      can_1evt->cd(8);
+      hits_info->GetHist_Hough_phiz_Offset(cnt_cycle)->Draw();
+      can_1evt->cd(9);
+      hits_info->GetHist_Hough_phiz_Slope_Offset(cnt_cycle)->Draw("COLZ");
+      
+      cnt_cycle++;
+    } // END-WHILE
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Judgement of success or false
     const Int_t n_primary_hit = 10;
     Int_t fl_success[n_primary_hit] = {0};
-
-    Int_t tmp_cnt = 0;
+    
     for( Int_t ip=0; ip<n_primary_hit; ip++ ){
       if( hits_info->GetNhits() == ip ) break;
       if( hits_info->GetClusterNo(hits_info->GetOrdergT(ip)) >= 0 ) fl_success[ip] = 1;
@@ -212,60 +294,18 @@ Int_t main( Int_t argc, Char_t** argv ){
       if( ip ) fl_success_integral[ip] = fl_success_integral[ip-1] + fl_success[ip];
       else     fl_success_integral[ip] =                             fl_success[ip];
     }
-
+    
     Int_t fl_fin_success = 0; // final judgement of success or false
     if( fl_success_integral[range_success-1]>=threshold_success ) fl_fin_success = 1;
-
-    if( fl_fin_success ){
-      hist_Nrec->Fill( td_DtEnergy[1] );
-    }
-
+    
+    if( fl_fin_success ) hist_Nrec->Fill( td_DtEnergy[1] );
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    TText* tex = new TText();
-    tex->SetTextColor(3);
-    tex->SetTextSize(0.05);
-    //hits_info->Print             (fl_message*((Int_t)(cnt_show<fl_show))); // tmppppp
-    //hits_info->Print_VaneID_Order(fl_message); // tmppppp
-    //hits_info->Print_gT_Order    (fl_message); // tmppppp
+
     // Draw
     if( ((cnt_show < fl_show || ievt==nevt-1) || fl_batch==2) && td_DtEnergy[1] > th_show_energy ){
-      //hits_info->Print(fl_message); // tmppppp
-      can_1evt->cd(1);
-      gPad->DrawFrame(-350,-350,350,350, Form("EvtNo:%d, E(e+)=%.1f MeV, P(e+) = (%.1f, %.1f, %.1f);X [mm];Y [mm]",td_eventNum,td_DtEnergy[1],td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]));
-      g_orbit      ->Draw("Lsame");
-      g_decpoint_xy->Draw("Psame");
-      g_decvec_xy  ->Draw();
-      if( g_hitpoint_xy      ->GetN() ) g_hitpoint_xy      ->Draw("Psame");
-      if( g_hitpoint_xy_close->GetN() ) g_hitpoint_xy_close->Draw("Psame");
-      if( g_hitpoint_xy_other->GetN() ) g_hitpoint_xy_other->Draw("Psame");
-      
-      can_1evt->cd(2);
-      gPad           ->DrawFrame(0.0,-250,2.0*TMath::Pi(),250, Form("EvtNo:%d, E(e+)=%.1f MeV;#phi [rad];Z [mm]",td_eventNum,td_DtEnergy[1]));
-      g_decpoint_phiz->Draw("Psame");
-      g_decvec_phiz  ->Draw();
-      if( g_hitpoint_phiz      ->GetN() ) g_hitpoint_phiz      ->Draw("Psame");
-      if( g_hitpoint_phiz_close->GetN() ) g_hitpoint_phiz_close->Draw("Psame");
-      if( g_hitpoint_phiz_other->GetN() ) g_hitpoint_phiz_other->Draw("Psame");
-      hits_info->GetFunc_Hough_phiz(0)->Draw("same");
-
-      can_1evt->cd(3);
-      hits_info->GetHist_Hough_phiz(0)->Draw("COLZ");
-
-      can_1evt->cd(4);
-      for( Int_t iline=0; iline<hits_info->GetNHoughLines(); iline++ ){
-	hits_info->GetHist_Hough_phiz_Residual(iline)->Draw( iline ? "same" : "" );
-      }
-
-
-      can_1evt->cd(5);
-      gPad           ->DrawFrame(0.0,-250,2.0*TMath::Pi(),250, Form("EvtNo:%d, E(e+)=%.1f MeV;#phi [rad];Z [mm]",td_eventNum,td_DtEnergy[1]));
-      g_decpoint_phiz->Draw("Psame");
-      g_decvec_phiz  ->Draw();
-      if( g_hitcluster_phiz->GetN() ) g_hitcluster_phiz->Draw("Psame");
-      
-      can_1evt->cd(8);
-      can_1evt->cd(8)->Clear();
+      can_1evt->cd(10);
+      can_1evt->cd(10)->Clear();
       tex->DrawTextNDC( 0.2,0.80, Form("EvtNo = %d", td_eventNum   ) );
       tex->DrawTextNDC( 0.2,0.75, Form("E(e+) = %.1f MeV", td_DtEnergy[1]) );
       tex->DrawTextNDC( 0.2,0.70, Form("P(e+) = (%.1f, %.1f, %.1f) [MeV]",td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]) );
@@ -334,22 +374,23 @@ Int_t main( Int_t argc, Char_t** argv ){
       delete g_decvec_phiz;
       delete g_hitpoint_xy;
       delete g_hitpoint_phiz;
-      delete g_hitpoint_vanez;
       delete g_hitpoint_xy_other;
       delete g_hitpoint_phiz_other;
-      delete g_hitpoint_vanez_other;
-      delete g_hitpoint_xy_close;
-      delete g_hitpoint_phiz_close;
-      delete g_hitpoint_vanez_close;
-      delete g_hitcluster_phiz;
-      /*      
-      delete hist_hough_phiz;
-      delete func_hough_phiz;
-      delete hist_resi_phiz;
-      */
       delete tex;
-
+      for( Int_t ivec=0; ivec<vg_seed_hit_xy.size       (); ivec++ ) delete vg_seed_hit_xy.at       (ivec);
+      for( Int_t ivec=0; ivec<vg_seed_hit_phiz.size     (); ivec++ ) delete vg_seed_hit_phiz.at     (ivec);
+      for( Int_t ivec=0; ivec<vg_clustered_hit_xy.size  (); ivec++ ) delete vg_clustered_hit_xy.at  (ivec);
+      for( Int_t ivec=0; ivec<vg_clustered_hit_phiz.size(); ivec++ ) delete vg_clustered_hit_phiz.at(ivec);
+      for( Int_t ivec=0; ivec<vg_missing_hit_xy.size    (); ivec++ ) delete vg_missing_hit_xy.at    (ivec);
+      for( Int_t ivec=0; ivec<vg_missing_hit_phiz.size  (); ivec++ ) delete vg_missing_hit_phiz.at  (ivec);
+      vg_seed_hit_xy.clear();
+      vg_seed_hit_phiz.clear();
+      vg_clustered_hit_xy.clear();
+      vg_clustered_hit_phiz.clear();
+      vg_missing_hit_xy.clear();
+      vg_missing_hit_phiz.clear();
     }
+
 
   } // END EVENT-LOOP
 
@@ -404,6 +445,15 @@ Int_t main( Int_t argc, Char_t** argv ){
   delete tree_body;
   delete tree_decay;
   delete g_orbit;
+  delete hist_Epos_Nhit;
+  delete hist_Epos;
+  delete hist_Nhit;
+  delete hist_Nrec;
+  delete hist_eff;
+  delete g_hitpoint_xy_int;
+  delete g_hitpoint_phiz_int;
+  delete g_hitpoint_vanez_int;
+  delete hits_info;
   
   return 0;
   

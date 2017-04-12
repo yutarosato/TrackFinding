@@ -9,17 +9,16 @@ public:
   HitsArray();
   ~HitsArray();
 
-  void InputHits( Int_t index, Double_t x, Double_t y, Double_t z, Double_t pt, Double_t gt, Int_t pID, Double_t EachDepE );
-  void ClearEvent();
-  void Print              ( Int_t fl_message=2 );
-  void Print_VaneID_Order ( Int_t fl_message=2 );
-  void Print_gT_Order     ( Int_t fl_message=2 );
-  void CalcOrder();
-  void HoughTransform_phiz();
-  void HoughFit_phiz();
-  void CalcHoughResidual_phiz();
-
-  void Clustering( Int_t fl_message=0 );
+  void  InputHits( Int_t index, Double_t x, Double_t y, Double_t z, Double_t pt, Double_t gt, Int_t pID, Double_t EachDepE );
+  void  ClearEvent();
+  void  Print              ( Int_t fl_message=2 );
+  void  Print_VaneID_Order ( Int_t fl_message=2 );
+  void  Print_gT_Order     ( Int_t fl_message=2 );
+  void  CalcOrder();
+  void  HoughTransform_phiz();
+  Int_t HoughFit_phiz();
+  Int_t CalcHoughResidual_phiz();
+  Int_t Clustering( Int_t fl_message=0 );
 
   Double_t Phi_uk   ( Double_t y, Double_t x );
   Int_t    GetVaneID( Double_t f_phi );
@@ -43,9 +42,9 @@ public:
 
 
   
-  TH1D*    GetHist_Hough_phiz_Residual( Int_t index ){ if( index>=m_hist_hough_phiz_resi.size() ){ std::cerr << "[ABORT] Wrong index for slope of hough-line(phiz)" << std::endl, abort(); } return m_hist_hough_phiz_resi.at(index); }
-  TH1D*    GetHist_Hough_phiz_Slope( Int_t index ){ if( index>=m_hist_hough_phiz_slope.size() ){ std::cerr << "[ABORT] Wrong index for offset of hough-line(phiz)" << std::endl, abort(); } return m_hist_hough_phiz_slope.at(index); }
-  TH1D*    GetHist_Hough_phiz_Offset( Int_t index ){ if( index>=m_hist_hough_phiz_offset.size() ){ std::cerr << "[ABORT] Wrong index for slope-offset of hough-line(phiz)" << std::endl, abort(); } return m_hist_hough_phiz_offset.at(index); }
+  TH1D*    GetHist_Hough_phiz_Residual( Int_t index ){ if( index>=m_hist_hough_phiz_resi.size()   ){ std::cerr << "[ABORT] Wrong index for slope of hough-line(phiz)"        << std::endl, abort(); } return m_hist_hough_phiz_resi.at(index); }
+  TH1D*    GetHist_Hough_phiz_Slope   ( Int_t index ){ if( index>=m_hist_hough_phiz_slope.size()  ){ std::cerr << "[ABORT] Wrong index for offset of hough-line(phiz)"       << std::endl, abort(); } return m_hist_hough_phiz_slope.at(index); }
+  TH1D*    GetHist_Hough_phiz_Offset  ( Int_t index ){ if( index>=m_hist_hough_phiz_offset.size() ){ std::cerr << "[ABORT] Wrong index for slope-offset of hough-line(phiz)" << std::endl, abort(); } return m_hist_hough_phiz_offset.at(index); }
   TH2D*    GetHist_Hough_phiz_Slope_Offset( Int_t index ){ if( index>=m_hist_hough_phiz_slope_offset.size() ){ std::cerr << "[ABORT] Wrong index for residual of hough-line(phiz)" << std::endl, abort(); } return m_hist_hough_phiz_slope_offset.at(index); }
   TH2D*    GetHist_Hough_phiz    ( Int_t index ){ if( index>=m_hist_hough_phiz.size     () ){ std::cerr << "[ABORT] Wrong index for hough-plane(phiz)"            << std::endl, abort(); } return m_hist_hough_phiz.at     (index); }
   TF1*     GetFunc_Hough_phiz    ( Int_t index ){ if( index>=m_func_hough_phiz.size     () ){ std::cerr << "[ABORT] Wrong index for hough-fit line(phiz)"         << std::endl, abort(); } return m_func_hough_phiz.at     (index); }
@@ -80,16 +79,19 @@ public:
   std::vector<Int_t>    m_order_gT;
 
   // Hough Fit
+  std::vector<std::vector<Double_t> > m_hough_phiz_rho;
+  std::vector<Double_t>               m_hough_phiz_theta;
+
   std::vector<Double_t> m_hough_phiz_par0;
   std::vector<Double_t> m_hough_phiz_par1;
-  std::vector<Double_t> m_hough_phiz_rho;
-  std::vector<Double_t> m_hough_phiz_theta;
+  std::vector<Double_t> m_hough_phiz_rho_max;
+  std::vector<Double_t> m_hough_phiz_theta_max;
 
  
   std::vector<TH2D*> m_hist_hough_phiz;
-  std::vector<TH2D*> m_hist_hough_phiz_slope_offset;
-  std::vector<TH1D*> m_hist_hough_phiz_slope;
-  std::vector<TH1D*> m_hist_hough_phiz_offset;
+  std::vector<TH2D*> m_hist_hough_phiz_slope_offset; // testing
+  std::vector<TH1D*> m_hist_hough_phiz_slope; // testing
+  std::vector<TH1D*> m_hist_hough_phiz_offset; // testing
   std::vector<TF1*>  m_func_hough_phiz;
   std::vector<TH1D*> m_hist_hough_phiz_resi;
 
