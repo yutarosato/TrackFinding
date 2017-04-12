@@ -229,7 +229,7 @@ Int_t main( Int_t argc, Char_t** argv ){
     //hits_info->Print_VaneID_Order(fl_message); // tmppppp
     //hits_info->Print_gT_Order    (fl_message); // tmppppp
     // Draw
-    if( ((cnt_show < fl_show || ievt==nevt-1) || fl_batch==2) && td_DtEnergy[1] > th_show_energy && fl_fin_success==0 ){
+    if( ((cnt_show < fl_show || ievt==nevt-1) || fl_batch==2) && td_DtEnergy[1] > th_show_energy ){
       //hits_info->Print(fl_message); // tmppppp
       can_1evt->cd(1);
       gPad->DrawFrame(-350,-350,350,350, Form("EvtNo:%d, E(e+)=%.1f MeV, P(e+) = (%.1f, %.1f, %.1f);X [mm];Y [mm]",td_eventNum,td_DtEnergy[1],td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]));
@@ -314,7 +314,8 @@ Int_t main( Int_t argc, Char_t** argv ){
       if( ievt!=nevt-1 && !gROOT->IsBatch() ){
 	can_1evt->Update();
 	//hits_info->Test();
-	hits_info->Print_VaneID_Order(fl_message);
+	//hits_info->Print_VaneID_Order(fl_message);
+	hits_info->Print_gT_Order(fl_message);
 	can_1evt->WaitPrimitive();
       }
 

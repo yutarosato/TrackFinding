@@ -80,13 +80,10 @@ public:
   std::vector<Int_t>    m_order_gT;
 
   // Hough Fit
-  std::vector<std::vector<Double_t> > m_hough_phiz_rho;
-  std::vector<Double_t>               m_hough_phiz_theta;
-  
   std::vector<Double_t> m_hough_phiz_par0;
   std::vector<Double_t> m_hough_phiz_par1;
-  std::vector<Double_t> m_hough_phiz_rho_max;
-  std::vector<Double_t> m_hough_phiz_theta_max;
+  std::vector<Double_t> m_hough_phiz_rho;
+  std::vector<Double_t> m_hough_phiz_theta;
 
  
   std::vector<TH2D*> m_hist_hough_phiz;
