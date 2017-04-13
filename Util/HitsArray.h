@@ -16,8 +16,8 @@ public:
   void  Print_gT_Order     ( Int_t fl_message=2 );
   void  CalcOrder();
   void  HoughTransform_phiz();
-  Int_t HoughFit_phiz();
-  Int_t CalcHoughResidual_phiz();
+  Int_t HoughFit_phiz( Int_t fl_message=0 );
+  Int_t CalcHoughResidual_phiz( Int_t fl_message=0 );
   Int_t Clustering( Int_t fl_message=0 );
 
   Double_t Phi_uk   ( Double_t y, Double_t x );
@@ -96,7 +96,7 @@ public:
   std::vector<TH1D*> m_hist_hough_phiz_resi;
 
   // Clustering
-  std::vector<Int_t> m_clusterNo;
+  std::vector<Int_t> m_clusterNo; // cluster number (initial value:-999)
   
 
  public:

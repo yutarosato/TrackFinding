@@ -188,7 +188,7 @@ void HitsArray::HoughTransform_phiz(){
 		      +m_Z.at(ivec)*TMath::Sin((double)istep*TMath::Pi()/180));
       Double_t theta = istep;
       tmp_vector.push_back( rho );
-      //if( theta < 30.0 || theta > 150 ) continue; // tmpppppp
+      if( (10.0 < theta && theta < 30.0) || (150.0 < theta &&  theta < 170.0) ) continue; // tmpppppp
       hist_hough_phiz->Fill( theta+1.0e-5, rho );
     }
     m_hough_phiz_rho.push_back( tmp_vector );
@@ -200,7 +200,8 @@ void HitsArray::HoughTransform_phiz(){
 }
 
 
-Int_t HitsArray::HoughFit_phiz(){
+Int_t HitsArray::HoughFit_phiz( Int_t fl_message ){
+  if( fl_message > 1 ) std::cout << "   *****[START : HoughFit_phiz]*****" << std::endl;
   TH1D* hist_hough_phiz_slope        = new TH1D( Form("hist_hough_phiz_slope_%d",       m_hist_hough_phiz_slope.size ()),       "Slope at hough-point(#phi-Z);Slope",               100,  -10,  10 );
   TH1D* hist_hough_phiz_offset       = new TH1D( Form("hist_hough_phiz_offset_%d",      m_hist_hough_phiz_offset.size()),       "Offset at hough-point(#phi-Z);Offset",             100, -100, 100 );
   TH2D* hist_hough_phiz_slope_offset = new TH2D( Form("hist_hough_phiz_slope_offset_%d",m_hist_hough_phiz_slope_offset.size()), "Slope-Offset at hough-point(#phi-Z);Slope;Offset", 100,  -10,  10, 100, -100, 100 );
@@ -209,10 +210,28 @@ Int_t HitsArray::HoughFit_phiz(){
   m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetMaximumBin(max_xbin,max_ybin, max_zbin);
   Double_t rho   = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetYaxis()->GetBinLowEdge(max_ybin) + m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinWidth(max_ybin)/2.0;
   Double_t theta = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinLowEdge(max_xbin) + m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinWidth(max_xbin)/2.0;
+  Double_t par0 =  rho/TMath::Sin(theta*TMath::Pi()/180.0);
+  Double_t par1 = -1.0/TMath::Tan(theta*TMath::Pi()/180.0)*180.0/TMath::Pi();
+
+  // exception handling for vertical line
+  /*
+  if( max_xbin==1 ){
+    rho   = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetYaxis()->GetBinLowEdge(max_ybin); // 0
+    theta = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinLowEdge(max_xbin); // 0
+    par0 =  rho/TMath::Sin(theta*TMath::Pi()/180.0);
+    par1 = -1.0/TMath::Tan(theta*TMath::Pi()/180.0)*180.0/TMath::Pi();
+  }else if( max_xbin==m_hough_nstep_theta ){
+    rho   = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetYaxis()->GetBinLowEdge(max_ybin) + m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinWidth(max_ybin); // 180
+    theta = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinLowEdge(max_xbin) + m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinWidth(max_xbin); // 180
+    par0 =  rho/TMath::Sin(theta*TMath::Pi()/180.0);
+    par1 = -1.0/TMath::Tan(theta*TMath::Pi()/180.0)*180.0/TMath::Pi();
+  }
+  */
+  
   // testing
   for( Int_t ivec=0; ivec<m_hough_phiz_rho.size(); ivec++ ){
     Double_t offset = m_hough_phiz_rho.at(ivec).at(max_xbin-1) - rho;
-    if( TMath::Abs(offset) >100 ) continue;
+    if( TMath::Abs(offset) > 100 ) continue;
     Double_t del_rho   = m_hough_phiz_rho.at(ivec).at( max_xbin==1 ? max_xbin : max_xbin-1 ) - m_hough_phiz_rho.at(ivec).at( max_xbin==1 ? max_xbin-1 : max_xbin-2);
     Double_t del_theta = m_hough_phiz_theta.at       ( max_xbin==1 ? max_xbin : max_xbin-1 ) - m_hough_phiz_theta.at       ( max_xbin==1 ? max_xbin-1 : max_xbin-2);
     Double_t slope = del_rho/del_theta;
@@ -221,46 +240,68 @@ Int_t HitsArray::HoughFit_phiz(){
     hist_hough_phiz_slope_offset->Fill(slope,offset);
   }
   
-  m_hist_hough_phiz_slope.push_back( hist_hough_phiz_slope );
-  m_hist_hough_phiz_offset.push_back( hist_hough_phiz_offset );
+  m_hist_hough_phiz_slope.push_back       ( hist_hough_phiz_slope );
+  m_hist_hough_phiz_offset.push_back      ( hist_hough_phiz_offset );
   m_hist_hough_phiz_slope_offset.push_back( hist_hough_phiz_slope_offset );  
-  // must add break point;
+
   Int_t entry = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetBinContent(max_xbin,max_ybin);
 
-  if( entry < 5 ) return -1;
+  if( fl_message > 1 ) std::cout << "      NHoughLine = "
+				 << m_hough_phiz_par0.size() << " : rho(max) = "
+				 << rho                      << ", theta = "
+				 << theta                    << ", par0 = "
+				 << par0                     << ", par1 = "
+				 << par1;
+
+  // break point;  
+  if( entry < 5 || ((theta < 10.0 || theta > 170.0) && entry < 20) ){
+    if( fl_message > 1 ) std::cout << " => not identified as maximum point : " << fl_message << std::endl;
+    return -1;
+  }else{
+    if( fl_message > 1 ) std::cout << " => identified as maximum point" << std::endl;
+  }
   //+++++++++++++++++++++++++++++++
 
-  Double_t par0 =  rho/TMath::Sin(theta*TMath::Pi()/180.0);
-  Double_t par1 = -1.0/TMath::Tan(theta*TMath::Pi()/180.0)*180.0/TMath::Pi();
+  m_hough_phiz_rho_max.push_back  ( rho   );
+  m_hough_phiz_theta_max.push_back( theta );
+
   m_hough_phiz_par0.push_back( par0 );
   m_hough_phiz_par1.push_back( par1 );
 
   TF1* func_hough_phiz = new TF1( Form("func_hough_phiz_%d",m_hough_phiz_par0.size()-1), "[0]+[1]*x", 0.0, 2*TMath::Pi() );
   func_hough_phiz->SetLineColor( m_hough_phiz_par0.size()+1 );
+  func_hough_phiz->SetLineWidth( 1 );
+  func_hough_phiz->SetLineStyle( 1 );
   func_hough_phiz->SetParameter( 0, m_hough_phiz_par0.at(m_hough_phiz_par0.size()-1) );
   func_hough_phiz->SetParameter( 1, m_hough_phiz_par1.at(m_hough_phiz_par0.size()-1) );
   m_func_hough_phiz.push_back( func_hough_phiz );
 
   m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->SetTitle( Form("%s, (#theta,#rho) = (%.1f, %.1f)",m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetTitle(),theta,rho) );
-
+  
   return 1;
 }
 
-Int_t HitsArray::CalcHoughResidual_phiz(){
+Int_t HitsArray::CalcHoughResidual_phiz( Int_t fl_message ){
+  if( fl_message > 1 ) std::cout << "   *****[START : CalcHoughResidual_phiz]*****" << std::endl;
   if( !m_hough_phiz_par0.size() ) return -1;
   Int_t iline = m_hough_phiz_par0.size()-1;
   TH1D* hist_resi_phiz = new TH1D( Form("hist_resi_phiz_%d",iline),  Form("Residual_%d(#phi-Z);",iline),  100, -20, 20 );
   Double_t par0 = m_hough_phiz_par0.at(iline);
   Double_t par1 = m_hough_phiz_par1.at(iline);
-  //std::cout << "   par0 = " << par0 << ", par1 = " << par1 << std::endl;
+  if( fl_message > 1 ) std::cout << "      iline = " << iline << " : par0 = " << par0 << ", par1 = " << par1 << std::endl;
   hist_resi_phiz->SetLineColor( m_hist_hough_phiz_resi.size()+1 );
+  Int_t cnt_seed = 0;
   for( Int_t ivec=0; ivec<m_X.size(); ivec++ ){
     Double_t residual = m_Z.at(ivec) - ( par0+par1*m_Phi.at(ivec) );
     hist_resi_phiz->Fill( residual );
     //if( m_cluster_No.at(ivec) >= 0 ) continue; // to be check if this line is needed or not
-    if( TMath::Abs(residual) < 10 ) m_close_hough_phiz.at(ivec) = iline;
-    //std::cout << "              ivec = " << ivec << ", residual = " << residual << " : Phi = " << m_Phi.at(ivec) << ", Z = " << m_Z.at(ivec) << std::endl;
+    if( TMath::Abs(residual) < 10 ){
+      m_close_hough_phiz.at(ivec) = iline;
+      cnt_seed++;
+      if( fl_message > 1 ) std::cout << "         index = " << m_Index.at(ivec) << ", vaneID = " << m_VaneID.at(ivec) << std::endl;
+    }
   }
+  if( fl_message > 1 ) std::cout << "      => Nseed = " << cnt_seed << std::endl;
   m_hist_hough_phiz_resi.push_back( hist_resi_phiz );
 
   return 1;
@@ -268,11 +309,10 @@ Int_t HitsArray::CalcHoughResidual_phiz(){
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Int_t HitsArray::Clustering( Int_t fl_message ){
-  if( fl_message > 1 ) std::cout << "Clustering Start" << std::endl
-				 << "Nline = " << m_hough_phiz_par0.size() << std::endl;
+  if( fl_message > 1 ) std::cout << "   *****[START : Clustering]*****" << std::endl;
   if( !m_hough_phiz_par0.size() ) return -1;
   Int_t iline = m_hough_phiz_par0.size()-1;
-  if( fl_message > 1 ) std::cout << "   iline = " << iline << ", Vane-ID : ";
+  if( fl_message > 1 ) std::cout << "      iline = " << iline << ", Vane-ID : ";
   
   std::vector<Int_t> cluster_index; // index for Vane-ID order
   for( Int_t ivane=0; ivane<m_order_VaneID.size(); ivane++ ){
@@ -282,8 +322,11 @@ Int_t HitsArray::Clustering( Int_t fl_message ){
       if( fl_message > 1 ) std::cout << m_VaneID.at( m_order_VaneID.at(ivane) ) << ", ";
     }
   }
-  if( fl_message > 1 ) std::cout << "seed sluster : " << cluster_index.size() << std::endl;
-  if( cluster_index.size()<4 ) return -1;
+  if( fl_message > 1 ) std::cout << "seed cluster : " << cluster_index.size() << std::endl;
+  if( cluster_index.size()<4 ){
+    if( fl_message > 1 ) std::cout << " => insufficient seed" << std::endl;
+    return -1;
+  }
   
   // forward ++++++++++++++++++++++++++;
   Int_t cnt_miss_forward = 0;
@@ -301,7 +344,7 @@ Int_t HitsArray::Clustering( Int_t fl_message ){
     Int_t current_VaneID = m_VaneID.at(index3);
     Int_t target_VaneID  = (pre_target_VaneID < 0 ? m_VaneID.at(index3)+1 : pre_target_VaneID+1 );
     if( fl_message > 1 ) std::cout << std::endl
-				   << "Extrapolate(forward) from "
+				   << "      Extrapolate(forward) from "
 				   << m_VaneID.at( index1 ) << "&"
 				   << m_VaneID.at( index2 ) << "&"
 				   << m_VaneID.at( index3 ) << std::endl;
@@ -320,7 +363,7 @@ Int_t HitsArray::Clustering( Int_t fl_message ){
     }
     if( target_VaneID < 0 ) break;
     pre_target_VaneID = target_VaneID;
-    if( fl_message > 1 ) std::cout << "     target VaneID = "
+    if( fl_message > 1 ) std::cout << "         target VaneID = "
 				   << target_VaneID << " : R = "
 				   << extrap_r      << ", Z = "
 				   << extrap_z      << " : x0 = "
@@ -337,7 +380,7 @@ Int_t HitsArray::Clustering( Int_t fl_message ){
       if( m_clusterNo.at(m_order_VaneID.at(ivane))>=0          ) continue;
       Double_t dev_r = TMath::Abs( extrap_r - m_R.at(m_order_VaneID.at(ivane)) );
       Double_t dev_z = TMath::Abs( extrap_z - m_Z.at(m_order_VaneID.at(ivane)) );
-      if( fl_message > 1 ) std::cout << "       dev(r) = " << dev_r << ", dev(z) = " << dev_z << ", dev_min = " << sqrt(pow(dev_r,2)+pow(dev_z,2)) << std::endl;
+      if( fl_message > 1 ) std::cout << "            dev(r) = " << dev_r << ", dev(z) = " << dev_z << ", dev_min = " << sqrt(pow(dev_r,2)+pow(dev_z,2)) << std::endl;
       if( dev_min > sqrt(pow(dev_r,2)+pow(dev_z,2)) ){
 	dev_min   = sqrt(pow(dev_r,2)+pow(dev_z,2));
 	index_min = ivane;
@@ -347,10 +390,10 @@ Int_t HitsArray::Clustering( Int_t fl_message ){
       m_clusterNo.at( m_order_VaneID.at(index_min) ) = iline;
       cluster_index.push_back(index_min);
       cnt_miss_forward = 0;
-      if( fl_message > 1 ) std::cout << "       => added the hit into the cluster" << std::endl;
+      if( fl_message > 1 ) std::cout << "         => added the hit into the cluster" << std::endl;
     }else{
       if( !(extrap_r < m_geom_r_inner || extrap_r > m_geom_r_outer) ) cnt_miss_forward++;
-      if( fl_message > 1 ) std::cout << "       => can not find hit points by extrapolation : dev_min = " << dev_min << ", cnt_miss_foward = " << cnt_miss_forward << std::endl;
+      if( fl_message > 1 ) std::cout << "         => can not find hit points by extrapolation : dev_min = " << dev_min << ", cnt_miss_forward = " << cnt_miss_forward << std::endl;
     }
   }
   // backward ++++++++++++++++++++++++++;
@@ -365,7 +408,7 @@ Int_t HitsArray::Clustering( Int_t fl_message ){
     Int_t current_VaneID = m_VaneID.at(index3);
     Int_t target_VaneID  = (pre_target_VaneID < 0 ? m_VaneID.at(index3)-1 : pre_target_VaneID-1 );
     if( fl_message > 1 ) std::cout << std::endl
-				   << "Extrapolate(backward) from "
+				   << "      Extrapolate(backward) from "
 				   << m_VaneID.at( index1 ) << "&"
 				   << m_VaneID.at( index2 ) << "&"
 				   << m_VaneID.at( index3 ) << std::endl;
@@ -383,7 +426,7 @@ Int_t HitsArray::Clustering( Int_t fl_message ){
     }
     if( target_VaneID < 0 ) break;
     pre_target_VaneID = target_VaneID;
-    if( fl_message > 1 ) std::cout << "     target VaneID = "
+    if( fl_message > 1 ) std::cout << "         target VaneID = "
 				   << target_VaneID << " : R = "
 				   << extrap_r      << ", Z = "
 				   << extrap_z      << " : x0 = "
@@ -400,7 +443,7 @@ Int_t HitsArray::Clustering( Int_t fl_message ){
       if( m_clusterNo.at(m_order_VaneID.at(ivane))>=0          ) continue;
       Double_t dev_r = TMath::Abs( extrap_r - m_R.at(m_order_VaneID.at(ivane)) );
       Double_t dev_z = TMath::Abs( extrap_z - m_Z.at(m_order_VaneID.at(ivane)) );
-      if( fl_message > 1 ) std::cout << "       dev(r) = " << dev_r << ", dev(z) = " << dev_z << ", dev_min = " << sqrt(pow(dev_r,2)+pow(dev_z,2)) << std::endl;
+      if( fl_message > 1 ) std::cout << "            dev(r) = " << dev_r << ", dev(z) = " << dev_z << ", dev_min = " << sqrt(pow(dev_r,2)+pow(dev_z,2)) << std::endl;
       if( dev_min > sqrt(pow(dev_r,2)+pow(dev_z,2)) ){
 	dev_min   = sqrt(pow(dev_r,2)+pow(dev_z,2));
 	index_min = ivane;
@@ -410,14 +453,16 @@ Int_t HitsArray::Clustering( Int_t fl_message ){
       m_clusterNo.at( m_order_VaneID.at(index_min) ) = iline;
       cluster_index.insert(cluster_index.begin(), index_min);
       cnt_miss_backward = 0;
-      if( fl_message > 1 ) std::cout << "       => added the hit into the cluster" << std::endl;
+      if( fl_message > 1 ) std::cout << "         => added the hit into the cluster" << std::endl;
     }else{
       if( !(extrap_r < m_geom_r_inner || extrap_r > m_geom_r_outer) ) cnt_miss_backward++;
-      if( fl_message > 1 ) std::cout << "can not find hit points by extrapolation : dev_min = " << dev_min << std::endl;
+      if( fl_message > 1 ) std::cout << "         => can not find hit points by extrapolation : dev_min = " << dev_min << ", cnt_miss_backward = " << cnt_miss_backward << std::endl;
     }
   }
   
-  if( fl_message > 1 ) std::cout << "Clustering finish" << std::endl;
+
+  
+  if( fl_message > 1 ) std::cout << "   *****[FINISH : Clustering]***** : cluster size : " << cluster_index.size() << std::endl;
 
   return 1;
 }
