@@ -1,11 +1,12 @@
 #include "setting.h"
 
-const Int_t    fl_message        = 0; // 2(debug), 1(normal), 0(silent)
-const Int_t    fl_show           = 0;
-const Double_t th_show_energy    = 150.0;
-const Int_t    threshold_success = 3; // Hit definition : >= threshold_success/range_success
-const Int_t    range_success     = 3;
-const Int_t    fl_batch          = 0; // 0(show), 1(batch), 2(batch&save)
+const Int_t    fl_message         = 0; // 2(debug), 1(normal), 0(silent)
+const Int_t    fl_show            = 0;
+const Double_t th_show_energy_min = 100.0;
+const Double_t th_show_energy_max = 200.0;
+const Int_t    threshold_success  = 3; // Hit definition : >= threshold_success/range_success
+const Int_t    range_success      = 3;
+const Int_t    fl_batch           = 2; // 0(show), 1(batch), 2(batch&save)
 
  // seed of cluster
 std::vector<TGraph*> vg_seed_hit_xy;
@@ -73,7 +74,10 @@ Int_t main( Int_t argc, Char_t** argv ){
 
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
   Int_t nevt       = tree_body->GetEntries();
-  if( fl_batch==2 ) can_1evt->Print("pic/tracking.pdf[");
+  if( fl_batch==2 ){
+    can_1evt->Print( Form("pic/tracking_%d_%d_success.pdf[",(Int_t)th_show_energy_min,(Int_t)th_show_energy_max) );
+    can_1evt->Print( Form("pic/tracking_%d_%d_failure.pdf[",(Int_t)th_show_energy_min,(Int_t)th_show_energy_max) );
+  }
   HitsArray* hits_info = new HitsArray();
   
   for( Int_t ievt=0; ievt<nevt; ievt++ ){ // START EVENT-LOOP
@@ -84,6 +88,8 @@ Int_t main( Int_t argc, Char_t** argv ){
     hits_info ->ClearEvent();
     tree_body ->GetEntry(ievt);
     tree_decay->GetEntry(ievt);
+
+    if( !(td_DtEnergy[1] >= th_show_energy_min && td_DtEnergy[1] < th_show_energy_max) ) continue; // tmpppppp
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Muon Decay Information
@@ -157,7 +163,7 @@ Int_t main( Int_t argc, Char_t** argv ){
     //hits_info->Print_VaneID_Order(fl_message); // tmppppp
     //hits_info->Print_gT_Order    (fl_message); // tmppppp
 
-    if( ((cnt_show < fl_show || ievt==nevt-1) || fl_batch==2) && td_DtEnergy[1] > th_show_energy ){
+    if( ((cnt_show < fl_show || ievt==nevt-1) || fl_batch==2) && td_DtEnergy[1] >= th_show_energy_min && td_DtEnergy[1] < th_show_energy_max ){
       //hits_info->Print(fl_message); // tmppppp
       can_1evt->Clear();
       can_1evt->Divide(4,3);
@@ -237,7 +243,7 @@ Int_t main( Int_t argc, Char_t** argv ){
       vg_missing_hit_xy.push_back    ( g_missing_hit_xy     );
       vg_missing_hit_phiz.push_back  ( g_missing_hit_phiz   );
       // Draw every clustering-cycle
-      if( ((cnt_show < fl_show || ievt==nevt-1) || fl_batch==2) && td_DtEnergy[1] > th_show_energy ){
+      if( ((cnt_show < fl_show || ievt==nevt-1) || fl_batch==2) && td_DtEnergy[1] >= th_show_energy_min && td_DtEnergy[1] < th_show_energy_max ){
 	can_1evt->cd(2);
 	if( hits_info->GetNHoughLines() ) hits_info->GetFunc_Hough_phiz(hits_info->GetNHoughLines()-1)->Draw("Lsame");
 
@@ -303,7 +309,7 @@ Int_t main( Int_t argc, Char_t** argv ){
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     // Draw
-    if( ((cnt_show < fl_show || ievt==nevt-1) || fl_batch==2) && td_DtEnergy[1] > th_show_energy ){
+    if( ((cnt_show < fl_show || ievt==nevt-1) || fl_batch==2) && td_DtEnergy[1] >= th_show_energy_min && td_DtEnergy[1] < th_show_energy_max ){
       can_1evt->cd(10);
       can_1evt->cd(10)->Clear();
       tex->DrawTextNDC( 0.2,0.80, Form("EvtNo = %d", td_eventNum   ) );
@@ -359,7 +365,10 @@ Int_t main( Int_t argc, Char_t** argv ){
 	can_1evt->WaitPrimitive();
       }
 
-      if( fl_batch==2 ) can_1evt->Print("pic/tracking.pdf");
+      if( fl_batch==2 ){
+	if( fl_fin_success ) can_1evt->Print( Form("pic/tracking_%d_%d_success.pdf",(Int_t)th_show_energy_min,(Int_t)th_show_energy_max) );
+	else                 can_1evt->Print( Form("pic/tracking_%d_%d_failure.pdf",(Int_t)th_show_energy_min,(Int_t)th_show_energy_max) );
+      }
       cnt_show++;
       //if( ievt>100 ) break; // tmppppp
     }
@@ -393,7 +402,11 @@ Int_t main( Int_t argc, Char_t** argv ){
 
   } // END EVENT-LOOP
 
-  if( fl_batch==2 ) can_1evt->Print("pic/tracking.pdf]");
+  if( fl_batch==2 ){
+    can_1evt->Print( Form("pic/tracking_%d_%d_success.pdf]",(Int_t)th_show_energy_min,(Int_t)th_show_energy_max) );
+    can_1evt->Print( Form("pic/tracking_%d_%d_failure.pdf]",(Int_t)th_show_energy_min,(Int_t)th_show_energy_max) );
+  }
+
 
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   // Calculation of Rec. Eff.
@@ -436,6 +449,7 @@ Int_t main( Int_t argc, Char_t** argv ){
   g_hitpoint_vanez_int->Draw("Psame");
 
   can->Update();
+  if( fl_batch==2 ) can->Print("pic/tracking_summary.eps");
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   
   std::cout << "finish" << std::endl;
