@@ -208,26 +208,12 @@ Int_t HitsArray::HoughFit_phiz( Int_t fl_message ){
   // Search Line
   Int_t max_xbin, max_ybin, max_zbin;
   m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetMaximumBin(max_xbin,max_ybin, max_zbin);
+  Double_t theta = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinLowEdge(max_xbin);
   Double_t rho   = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetYaxis()->GetBinLowEdge(max_ybin) + m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinWidth(max_ybin)/2.0;
-  Double_t theta = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinLowEdge(max_xbin) + m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinWidth(max_xbin)/2.0;
-  Double_t par0 =  rho/TMath::Sin(theta*TMath::Pi()/180.0);
-  Double_t par1 = -1.0/TMath::Tan(theta*TMath::Pi()/180.0)*180.0/TMath::Pi();
+  Double_t infinity = 1.0e+10;
+  Double_t par1 = ( theta ? -1.0/TMath::Tan(theta*TMath::Pi()/180.0)*180.0/TMath::Pi() : infinity      );
+  Double_t par0 = ( theta ?  rho/TMath::Sin(theta*TMath::Pi()/180.0)                   : -rho*infinity );
 
-  // exception handling for vertical line
-  /*
-  if( max_xbin==1 ){
-    rho   = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetYaxis()->GetBinLowEdge(max_ybin); // 0
-    theta = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinLowEdge(max_xbin); // 0
-    par0 =  rho/TMath::Sin(theta*TMath::Pi()/180.0);
-    par1 = -1.0/TMath::Tan(theta*TMath::Pi()/180.0)*180.0/TMath::Pi();
-  }else if( max_xbin==m_hough_nstep_theta ){
-    rho   = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetYaxis()->GetBinLowEdge(max_ybin) + m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinWidth(max_ybin); // 180
-    theta = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinLowEdge(max_xbin) + m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinWidth(max_xbin); // 180
-    par0 =  rho/TMath::Sin(theta*TMath::Pi()/180.0);
-    par1 = -1.0/TMath::Tan(theta*TMath::Pi()/180.0)*180.0/TMath::Pi();
-  }
-  */
-  
   // testing
   for( Int_t ivec=0; ivec<m_hough_phiz_rho.size(); ivec++ ){
     Double_t offset = m_hough_phiz_rho.at(ivec).at(max_xbin-1) - rho;

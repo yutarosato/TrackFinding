@@ -90,14 +90,13 @@ public:
  
   std::vector<TH2D*> m_hist_hough_phiz;
   std::vector<TH2D*> m_hist_hough_phiz_slope_offset; // testing
-  std::vector<TH1D*> m_hist_hough_phiz_slope; // testing
-  std::vector<TH1D*> m_hist_hough_phiz_offset; // testing
+  std::vector<TH1D*> m_hist_hough_phiz_slope;        // testing
+  std::vector<TH1D*> m_hist_hough_phiz_offset;       // testing
   std::vector<TF1*>  m_func_hough_phiz;
   std::vector<TH1D*> m_hist_hough_phiz_resi;
 
   // Clustering
   std::vector<Int_t> m_clusterNo; // cluster number (initial value:-999)
-  
 
  public:
   // Extrapolation

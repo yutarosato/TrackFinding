@@ -79,7 +79,7 @@ Int_t main( Int_t argc, Char_t** argv ){
   for( Int_t ievt=0; ievt<nevt; ievt++ ){ // START EVENT-LOOP
     //if( ievt!=669 ) continue; // tmppppp
     if( fl_message && (cnt_show < fl_show || ievt==nevt-1) ) std::cout << "+++++++++++++++ ievt = " << ievt << " ++++++++++++++++++++" << std::endl;
-    if( fl_message ) std::cout << "........ " << ievt/(nevt/100) << "%" << std::endl;
+    if( fl_message && ievt%(nevt/100)==0 ) std::cout << "........ " << ievt/(nevt/100) << "%" << std::endl;
     // read event
     hits_info ->ClearEvent();
     tree_body ->GetEntry(ievt);
