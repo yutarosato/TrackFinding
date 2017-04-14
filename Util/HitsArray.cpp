@@ -153,20 +153,48 @@ void HitsArray::Print_gT_Order( Int_t fl_message ){
   return;
 }
 
+void HitsArray::Print_Z_Order( Int_t fl_message ){
+  if( fl_message < 2 ) return;
+  for( Int_t ivane=0; ivane<m_order_Z.size(); ivane++ ){
+    std::cout << "              "
+	      << std::setw(3) << std::right << m_Index.at(m_order_Z.at(ivane)) << " : pID = "
+	      << m_pID.at(m_order_Z.at(ivane))   << ", (x,y,z) = ("
+	      << std::setw(7) << std::right << Form("%.2f",m_X.at       (m_order_Z.at(ivane))) << ", "
+	      << std::setw(7) << std::right << Form("%.2f",m_Y.at       (m_order_Z.at(ivane))) << ", "
+	      << std::setw(7) << std::right << Form("%.2f",m_Z.at       (m_order_Z.at(ivane))) << "), (R,phi) = ("
+	      << std::setw(5) << std::right << Form("%.2f",m_R.at       (m_order_Z.at(ivane))) << ", "
+	      << std::setw(5) << std::right << Form("%.2f",m_Phi.at     (m_order_Z.at(ivane))) << "), vane-ID = "
+	      << std::setw(2) << std::right << Form("%d",  m_VaneID.at  (m_order_Z.at(ivane))) << ", t(proper) = "
+	      << std::setw(8) << std::right << Form("%.4f",m_pT.at      (m_order_Z.at(ivane))) << ", t(global) = "
+	      << std::setw(8) << std::right << Form("%.3f",m_gT.at      (m_order_Z.at(ivane))) << ", Edep = "
+	      << std::setw(5) << std::right << Form("%.5f",m_EachDepE.at(m_order_Z.at(ivane))) << " : "
+      	      << std::setw(2) << std::right << m_fl_hough_phiz.at   (m_order_Z.at(ivane))    << ", "
+      	      << std::setw(4) << std::right << m_close_hough_phiz.at(m_order_Z.at(ivane))    << ", "
+      	      << std::setw(4) << std::right << m_clusterNo.at       (m_order_Z.at(ivane))    << ", "
+	      << std::endl;
+  }
+  return;
+}
+
 void HitsArray::CalcOrder(){
   if( m_order_VaneID.size() ) m_order_VaneID.clear();
   if( m_order_gT.size()     ) m_order_gT.clear();
+  if( m_order_Z.size()      ) m_order_Z.clear();
   
   std::multimap<Int_t,Double_t> tMap_VaneID;
   std::multimap<Int_t,Double_t> tMap_gT;
+  std::multimap<Int_t,Double_t> tMap_Z;
   for( Int_t ivec=0; ivec< m_Index.size(); ivec++ ){
     tMap_VaneID.insert( std::make_pair(m_VaneID.at(ivec),m_Index.at(ivec)) );
     tMap_gT.insert    ( std::make_pair(m_gT.at    (ivec),m_Index.at(ivec)) );
+    tMap_Z.insert     ( std::make_pair(m_Z.at     (ivec),m_Index.at(ivec)) );
   }
   std::multimap<Int_t,Double_t>::iterator it_VaneID = tMap_VaneID.begin();
   std::multimap<Int_t,Double_t>::iterator it_gT     = tMap_gT.begin    ();
+  std::multimap<Int_t,Double_t>::iterator it_Z      = tMap_Z.begin     ();
   while( it_VaneID != tMap_VaneID.end() ){ m_order_VaneID.push_back( (*it_VaneID).second ); it_VaneID++; }
   while( it_gT     != tMap_gT.end    () ){ m_order_gT.push_back    ( (*it_gT    ).second ); it_gT++;     }
+  while( it_Z      != tMap_Z.end     () ){ m_order_Z.push_back     ( (*it_Z     ).second ); it_Z++;      }
 }
 
 void HitsArray::HoughTransform_phiz(){
@@ -211,8 +239,8 @@ Int_t HitsArray::HoughFit_phiz( Int_t fl_message ){
   Double_t theta = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinLowEdge(max_xbin);
   Double_t rho   = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetYaxis()->GetBinLowEdge(max_ybin) + m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinWidth(max_ybin)/2.0;
   Double_t infinity = 1.0e+10;
-  Double_t par1 = ( theta ? -1.0/TMath::Tan(theta*TMath::Pi()/180.0)*180.0/TMath::Pi() : infinity      );
-  Double_t par0 = ( theta ?  rho/TMath::Sin(theta*TMath::Pi()/180.0)                   : -rho*infinity );
+  Double_t par1 = ( theta ? -1.0/TMath::Tan(theta*TMath::Pi()/180.0)*180.0/TMath::Pi() : infinity                        );
+  Double_t par0 = ( theta ?  rho/TMath::Sin(theta*TMath::Pi()/180.0)                   : -rho*infinity*TMath::Pi()/180.0 );
 
   // testing
   for( Int_t ivec=0; ivec<m_hough_phiz_rho.size(); ivec++ ){
@@ -240,7 +268,7 @@ Int_t HitsArray::HoughFit_phiz( Int_t fl_message ){
 				 << par1;
 
   // break point;  
-  if( entry < 5 || ((theta < 10.0 || theta > 170.0) && entry < 20) ){
+  if( entry < 5 || ((theta < 10.0 || theta > 170.0) && entry < 10) ){
     if( fl_message > 1 ) std::cout << " => not identified as maximum point : " << fl_message << std::endl;
     return -1;
   }else{
@@ -254,12 +282,17 @@ Int_t HitsArray::HoughFit_phiz( Int_t fl_message ){
   m_hough_phiz_par0.push_back( par0 );
   m_hough_phiz_par1.push_back( par1 );
 
-  TF1* func_hough_phiz = new TF1( Form("func_hough_phiz_%d",m_hough_phiz_par0.size()-1), "[0]+[1]*x", 0.0, 2*TMath::Pi() );
+  TF1* func_hough_phiz;
+  if( TMath::Abs(m_hough_phiz_par0.at(m_hough_phiz_par0.size()-1)) > 1.0e+5 ) func_hough_phiz = new TF1( Form("func_hough_phiz_%d",m_hough_phiz_par0.size()-1), "[0]+[1]*x", 
+													 -m_hough_phiz_par0.at(m_hough_phiz_par0.size()-1)/m_hough_phiz_par1.at(m_hough_phiz_par1.size()-1)-1.0e-6,
+													 -m_hough_phiz_par0.at(m_hough_phiz_par0.size()-1)/m_hough_phiz_par1.at(m_hough_phiz_par1.size()-1)+1.0e-6 );
+  else func_hough_phiz = new TF1( Form("func_hough_phiz_%d",m_hough_phiz_par0.size()-1), "[0]+[1]*x", 0.0, 2*TMath::Pi() );
+
   func_hough_phiz->SetLineColor( m_hough_phiz_par0.size()+1 );
   func_hough_phiz->SetLineWidth( 1 );
   func_hough_phiz->SetLineStyle( 1 );
   func_hough_phiz->SetParameter( 0, m_hough_phiz_par0.at(m_hough_phiz_par0.size()-1) );
-  func_hough_phiz->SetParameter( 1, m_hough_phiz_par1.at(m_hough_phiz_par0.size()-1) );
+  func_hough_phiz->SetParameter( 1, m_hough_phiz_par1.at(m_hough_phiz_par1.size()-1) );
   m_func_hough_phiz.push_back( func_hough_phiz );
 
   m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->SetTitle( Form("%s, (#theta,#rho) = (%.1f, %.1f)",m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetTitle(),theta,rho) );
@@ -278,10 +311,11 @@ Int_t HitsArray::CalcHoughResidual_phiz( Int_t fl_message ){
   hist_resi_phiz->SetLineColor( m_hist_hough_phiz_resi.size()+1 );
   Int_t cnt_seed = 0;
   for( Int_t ivec=0; ivec<m_X.size(); ivec++ ){
-    Double_t residual = m_Z.at(ivec) - ( par0+par1*m_Phi.at(ivec) );
+    Double_t residual = ( par1 < 1.e+5 ? m_Z.at(ivec) - ( par0+par1*m_Phi.at(ivec) ) : m_Phi.at(ivec) - (-par0/par1) );
+
     hist_resi_phiz->Fill( residual );
-    //if( m_cluster_No.at(ivec) >= 0 ) continue; // to be check if this line is needed or not
-    if( TMath::Abs(residual) < 10 ){
+    if( m_clusterNo.at(ivec) >= 0 ) continue; // to be check if this line is needed or not
+    if( (TMath::Abs(residual) < 10 && par1 < 1.e+5) || (TMath::Abs(residual) < 0.01 && par1 >= 1.e+5) ){
       m_close_hough_phiz.at(ivec) = iline;
       cnt_seed++;
       if( fl_message > 1 ) std::cout << "         index = " << m_Index.at(ivec) << ", vaneID = " << m_VaneID.at(ivec) << std::endl;
@@ -298,15 +332,22 @@ Int_t HitsArray::Clustering( Int_t fl_message ){
   if( fl_message > 1 ) std::cout << "   *****[START : Clustering]*****" << std::endl;
   if( !m_hough_phiz_par0.size() ) return -1;
   Int_t iline = m_hough_phiz_par0.size()-1;
+  if( m_hough_phiz_par1.at(iline) < 1.0e+5 ) return Clustering_3D      ( fl_message );
+  else                                       return Clustering_deltaray( fl_message );
+}
+
+Int_t HitsArray::Clustering_3D( Int_t fl_message ){
+  if( fl_message > 1 ) std::cout << "   *****[START : Clustering for normal track]*****" << std::endl;
+  if( !m_hough_phiz_par0.size() ) return -1;  
+  Int_t iline = m_hough_phiz_par0.size()-1;
   if( fl_message > 1 ) std::cout << "      iline = " << iline << ", Vane-ID : ";
   
   std::vector<Int_t> cluster_index; // index for Vane-ID order
   for( Int_t ivane=0; ivane<m_order_VaneID.size(); ivane++ ){
-    if( m_close_hough_phiz.at(m_order_VaneID.at(ivane))==iline ){
-      m_clusterNo.at( m_order_VaneID.at(ivane) ) = iline;
-      cluster_index.push_back(ivane);
-      if( fl_message > 1 ) std::cout << m_VaneID.at( m_order_VaneID.at(ivane) ) << ", ";
-    }
+    if( m_close_hough_phiz.at(m_order_VaneID.at(ivane))!=iline ) continue;
+    m_clusterNo.at( m_order_VaneID.at(ivane) ) = iline;
+    cluster_index.push_back(ivane);
+    if( fl_message > 1 ) std::cout << m_VaneID.at( m_order_VaneID.at(ivane) ) << ", ";
   }
   if( fl_message > 1 ) std::cout << "seed cluster : " << cluster_index.size() << std::endl;
   if( cluster_index.size()<4 ){
@@ -450,6 +491,50 @@ Int_t HitsArray::Clustering( Int_t fl_message ){
   
   if( fl_message > 1 ) std::cout << "   *****[FINISH : Clustering]***** : cluster size : " << cluster_index.size() << std::endl;
 
+  return 1;
+}
+
+Int_t HitsArray::Clustering_deltaray( Int_t fl_message ){
+  if( fl_message > 1 ) std::cout << "   *****[START : Clustering for delta-ray]*****" << std::endl;
+  if( !m_hough_phiz_par0.size() ) return -1;  
+  Int_t iline = m_hough_phiz_par0.size()-1;
+  if( fl_message > 1 ) std::cout << "      iline = " << iline << ", Z : ";
+
+  std::vector<Int_t> cluster_index; // index for Z order
+  Double_t R_sum   = 0;
+  Double_t Phi_sum = 0;
+  for( Int_t iz=0; iz<m_order_Z.size(); iz++ ){
+    if( m_close_hough_phiz.at(m_order_Z.at(iz))!=iline ) continue;
+    m_clusterNo.at( m_order_Z.at(iz) ) = iline;
+    cluster_index.push_back(iz);
+    if( fl_message > 1 ) std::cout << m_Z.at( m_order_Z.at(iz) ) << ", ";
+    R_sum   += m_R.at  ( m_order_Z.at(iz) );
+    Phi_sum += m_Phi.at( m_order_Z.at(iz) );
+  }
+
+  Double_t R_mean   = R_sum  /(Double_t)cluster_index.size();
+  Double_t Phi_mean = Phi_sum/(Double_t)cluster_index.size();
+  
+  if( fl_message > 1 ) std::cout << "seed cluster : " 
+				 << cluster_index.size() << ", R(mean) = "
+				 << R_mean               << ", Phi(mean) = "
+				 << Phi_mean             << std::endl;
+  if( cluster_index.size()<10 ){
+    if( fl_message > 1 ) std::cout << " => insufficient seed" << std::endl;
+    return -1;
+  }
+
+  for( Int_t iz=0; iz<m_order_Z.size(); iz++ ){
+    if( m_clusterNo.at(m_order_Z.at(iz))>=0 ) continue;
+    if( TMath::Abs(m_R.at  (m_order_Z.at(iz)) - R_mean  ) > 60   ) continue;
+    if( TMath::Abs(m_Phi.at(m_order_Z.at(iz)) - Phi_mean) > 0.01 ) continue;
+    m_clusterNo.at(m_order_Z.at(iz)) = iline;
+    if( fl_message > 1 ) std::cout << "         Z = " 
+				   << m_Z.at     (m_order_Z.at(iz)) << ", R = "
+				   << m_R.at     (m_order_Z.at(iz)) << ", Phi = "
+				   << m_Phi.at   (m_order_Z.at(iz)) << ", VaneID = "
+				   << m_VaneID.at(m_order_Z.at(iz)) << std::endl;
+  }
   return 1;
 }
 

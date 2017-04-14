@@ -14,18 +14,23 @@ public:
   void  Print              ( Int_t fl_message=2 );
   void  Print_VaneID_Order ( Int_t fl_message=2 );
   void  Print_gT_Order     ( Int_t fl_message=2 );
+  void  Print_Z_Order      ( Int_t fl_message=2 );
   void  CalcOrder();
   void  HoughTransform_phiz();
   Int_t HoughFit_phiz( Int_t fl_message=0 );
   Int_t CalcHoughResidual_phiz( Int_t fl_message=0 );
-  Int_t Clustering( Int_t fl_message=0 );
+  Int_t Clustering         ( Int_t fl_message=0 );
+  Int_t Clustering_3D      ( Int_t fl_message=0 );
+  Int_t Clustering_deltaray( Int_t fl_message=0 );
 
   Double_t Phi_uk   ( Double_t y, Double_t x );
   Int_t    GetVaneID( Double_t f_phi );
   Int_t    GetNVane      (){ return m_geom_nvane;             }
   Int_t    GetNhits      (){ return m_X.size();               }
   Int_t    GetNHoughLines(){ return m_hough_phiz_par0.size(); }
-  Int_t    GetOrdergT    ( Int_t index ){ return m_order_gT.at(index); }
+  Int_t    GetOrdergT    ( Int_t index ){ return m_order_gT.at    (index); }
+  Int_t    GetOrderVaneID( Int_t index ){ return m_order_VaneID.at(index); }
+  Int_t    GetOrderZ     ( Int_t index ){ return m_order_Z.at     (index); }
 
   Double_t GetX       ( Int_t index ){ if( index>=m_X.size       () ){ std::cerr << "[ABORT] Wrong index for X"        << std::endl, abort(); } return m_X.at       (index); }
   Double_t GetY       ( Int_t index ){ if( index>=m_Y.size       () ){ std::cerr << "[ABORT] Wrong index for Y"        << std::endl, abort(); } return m_Y.at       (index); }
@@ -77,6 +82,7 @@ public:
   // Sort
   std::vector<Int_t>    m_order_VaneID;
   std::vector<Int_t>    m_order_gT;
+  std::vector<Int_t>    m_order_Z;
 
   // Hough Fit
   std::vector<std::vector<Double_t> > m_hough_phiz_rho;

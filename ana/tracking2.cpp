@@ -1,7 +1,7 @@
 #include "setting.h"
 
-const Int_t    fl_message        = 2; // 2(debug), 1(normal), 0(silent)
-const Int_t    fl_show           = 2000;
+const Int_t    fl_message        = 0; // 2(debug), 1(normal), 0(silent)
+const Int_t    fl_show           = 0;
 const Double_t th_show_energy    = 150.0;
 const Int_t    threshold_success = 3; // Hit definition : >= threshold_success/range_success
 const Int_t    range_success     = 3;
@@ -79,7 +79,7 @@ Int_t main( Int_t argc, Char_t** argv ){
   for( Int_t ievt=0; ievt<nevt; ievt++ ){ // START EVENT-LOOP
     //if( ievt!=669 ) continue; // tmppppp
     if( fl_message && (cnt_show < fl_show || ievt==nevt-1) ) std::cout << "+++++++++++++++ ievt = " << ievt << " ++++++++++++++++++++" << std::endl;
-    if( fl_message && ievt%(nevt/100)==0 ) std::cout << "........ " << ievt/(nevt/100) << "%" << std::endl;
+    if( ievt%(nevt/100)==0 ) std::cout << "........ " << ievt/(nevt/100) << "%" << std::endl;
     // read event
     hits_info ->ClearEvent();
     tree_body ->GetEntry(ievt);
@@ -161,6 +161,7 @@ Int_t main( Int_t argc, Char_t** argv ){
       //hits_info->Print(fl_message); // tmppppp
       can_1evt->Clear();
       can_1evt->Divide(4,3);
+      for( Int_t ipad=0; ipad<12; ipad++ ) can_1evt->cd(ipad+1)->Clear();
       can_1evt->cd(1);
       gPad->DrawFrame(-350,-350,350,350, Form("EvtNo:%d, E(e+)=%.1f MeV, P(e+) = (%.1f, %.1f, %.1f);X [mm];Y [mm]",td_eventNum,td_DtEnergy[1],td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]));
       g_orbit      ->Draw("Lsame");
@@ -238,7 +239,8 @@ Int_t main( Int_t argc, Char_t** argv ){
       // Draw every clustering-cycle
       if( ((cnt_show < fl_show || ievt==nevt-1) || fl_batch==2) && td_DtEnergy[1] > th_show_energy ){
 	can_1evt->cd(2);
-	if( hits_info->GetNHoughLines() ) hits_info->GetFunc_Hough_phiz(hits_info->GetNHoughLines()-1)->Draw("same");
+	if( hits_info->GetNHoughLines() ) hits_info->GetFunc_Hough_phiz(hits_info->GetNHoughLines()-1)->Draw("Lsame");
+
 	can_1evt->cd(3+4*(cnt_cycle%3));
 	hits_info->GetHist_Hough_phiz(cnt_cycle)->Draw("COLZ");
 	can_1evt->cd(4+4*(cnt_cycle%3));
@@ -267,7 +269,7 @@ Int_t main( Int_t argc, Char_t** argv ){
 	can_1evt->cd(10);
 	hits_info->GetHist_Hough_phiz_Slope_Offset(cnt_cycle)->Draw("COLZ");
 
-	hits_info->Print_gT_Order    (fl_message); // tmppppp
+	hits_info->Print_gT_Order(fl_message); // tmppppp
 	if( fl_message > 1 ) std::cout << "     fl_cycle_end = " << fl_cycle_end << std::endl;
 
 	can_1evt->Update();
@@ -352,7 +354,7 @@ Int_t main( Int_t argc, Char_t** argv ){
       if( ievt!=nevt-1 && !gROOT->IsBatch() ){
 	//hits_info->Test();
 	//hits_info->Print_VaneID_Order(fl_message);
-	hits_info->Print_gT_Order(fl_message);
+	//hits_info->Print_gT_Order(fl_message);
 	can_1evt->Update();
 	can_1evt->WaitPrimitive();
       }
