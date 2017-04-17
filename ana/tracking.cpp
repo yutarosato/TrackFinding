@@ -1,12 +1,12 @@
 #include "setting.h"
 
 const Int_t    fl_message         = 1; // 2(debug), 1(normal), 0(silent)
-const Int_t    fl_show            = 100;
-const Double_t th_show_energy_min = 200.0;
-const Double_t th_show_energy_max = 400.0;
+const Int_t    fl_show            = 0;
+const Double_t th_show_energy_min =   0.0;
+const Double_t th_show_energy_max = 100.0;
 const Int_t    threshold_success  = 3; // Hit definition : >= threshold_success/range_success
 const Int_t    range_success      = 3;
-const Int_t    fl_batch           = 0; // 0(show), 1(batch), 2(batch&save)
+const Int_t    fl_batch           = 2; // 0(show), 1(batch), 2(batch&save)
 
  // seed of cluster
 std::vector<TGraph*> vg_seed_hit_xy;
