@@ -17,50 +17,58 @@ public:
   void  Print_Z_Order      ( Int_t fl_message=2 );
   void  CalcOrder();
   void  HoughTransform_phiz();
-  Int_t HoughFit_phiz( Int_t fl_message=0 );
+  Int_t HoughFit_phiz         ( Int_t fl_message=0 );
   Int_t CalcHoughResidual_phiz( Int_t fl_message=0 );
-  Int_t Clustering         ( Int_t fl_message=0 );
-  Int_t Clustering_3D      ( Int_t fl_message=0 );
-  Int_t Clustering_deltaray( Int_t fl_message=0 );
+  Int_t Clustering            ( Int_t fl_message=0 );
+  Int_t Clustering_3D         ( Int_t fl_message=0 );
+  Int_t Clustering_deltaray   ( Int_t fl_message=0 );
 
-  Double_t Phi_uk   ( Double_t y, Double_t x );
-  Int_t    GetVaneID( Double_t f_phi );
+  Double_t Phi_uk        ( Double_t y, Double_t x );
+  Int_t    GetVaneID     ( Double_t f_phi );
   Int_t    GetNVane      (){ return m_geom_nvane;             }
   Int_t    GetNhits      (){ return m_X.size();               }
   Int_t    GetNHoughLines(){ return m_hough_phiz_par0.size(); }
   Int_t    GetOrdergT    ( Int_t index ){ return m_order_gT.at    (index); }
   Int_t    GetOrderVaneID( Int_t index ){ return m_order_VaneID.at(index); }
   Int_t    GetOrderZ     ( Int_t index ){ return m_order_Z.at     (index); }
+  Double_t GetGeomPhi    ( Int_t index ){ if( index>=m_geom_nvane ){ std::cerr << "[ABORT] Wrong VaneID : " << index << std::endl; abort(); } return m_geom_phi[index]; }
+  Double_t GetGeomRinner (){ return m_geom_r_inner; }
+  Double_t GetGeomRouter (){ return m_geom_r_outer; }
+  Double_t GetGeomRpole  (){ return m_geom_r_pole;  }
+  Double_t GetGeomZmin   (){ return m_geom_z_min;   }
+  Double_t GetGeomZmax   (){ return m_geom_z_max;   }
 
-  Double_t GetX       ( Int_t index ){ if( index>=m_X.size       () ){ std::cerr << "[ABORT] Wrong index for X"        << std::endl, abort(); } return m_X.at       (index); }
-  Double_t GetY       ( Int_t index ){ if( index>=m_Y.size       () ){ std::cerr << "[ABORT] Wrong index for Y"        << std::endl, abort(); } return m_Y.at       (index); }
-  Double_t GetZ       ( Int_t index ){ if( index>=m_Z.size       () ){ std::cerr << "[ABORT] Wrong index for Z"        << std::endl, abort(); } return m_Z.at       (index); }
-  Double_t GetR       ( Int_t index ){ if( index>=m_R.size       () ){ std::cerr << "[ABORT] Wrong index for R"        << std::endl, abort(); } return m_R.at       (index); }
-  Double_t GetPhi     ( Int_t index ){ if( index>=m_Phi.size     () ){ std::cerr << "[ABORT] Wrong index for Phi"      << std::endl, abort(); } return m_Phi.at     (index); }
-  Int_t    GetVaneID  ( Int_t index ){ if( index>=m_VaneID.size  () ){ std::cerr << "[ABORT] Wrong index for VaneID"   << std::endl, abort(); } return m_VaneID.at  (index); }
-  Double_t GetgT      ( Int_t index ){ if( index>=m_gT.size      () ){ std::cerr << "[ABORT] Wrong index for gT"       << std::endl, abort(); } return m_gT.at      (index); }
-  Double_t GetpT      ( Int_t index ){ if( index>=m_pT.size      () ){ std::cerr << "[ABORT] Wrong index for pT"       << std::endl, abort(); } return m_pT.at      (index); }
-  Int_t    GetpID     ( Int_t index ){ if( index>=m_pID.size     () ){ std::cerr << "[ABORT] Wrong index for pID"      << std::endl, abort(); } return m_pID.at     (index); }
-  Double_t GetEachDepE( Int_t index ){ if( index>=m_EachDepE.size() ){ std::cerr << "[ABORT] Wrong index for EachDepE" << std::endl, abort(); } return m_EachDepE.at(index); }
-  Int_t GetClose_Hough_phiz( Int_t index ){ if( index>=m_close_hough_phiz.size() ){ std::cerr << "[ABORT] Wrong index for close-hough-line(phiz)" << std::endl, abort(); } return m_close_hough_phiz.at(index); }
-  Int_t GetClusterNo  ( Int_t index ){ if( index>=m_clusterNo.size()){ std::cerr << "[ABORT] Wrong index for clusterNo" << std::endl, abort(); } return m_clusterNo.at(index); }
+
+  Double_t GetX               ( Int_t index ){ if( index>=m_X.size               () ){ std::cerr << "[ABORT] Wrong index for X"                      << std::endl, abort(); } return m_X.at               (index); }
+  Double_t GetY               ( Int_t index ){ if( index>=m_Y.size               () ){ std::cerr << "[ABORT] Wrong index for Y"                      << std::endl, abort(); } return m_Y.at               (index); }
+  Double_t GetZ               ( Int_t index ){ if( index>=m_Z.size               () ){ std::cerr << "[ABORT] Wrong index for Z"                      << std::endl, abort(); } return m_Z.at               (index); }
+  Double_t GetR               ( Int_t index ){ if( index>=m_R.size               () ){ std::cerr << "[ABORT] Wrong index for R"                      << std::endl, abort(); } return m_R.at               (index); }
+  Double_t GetPhi             ( Int_t index ){ if( index>=m_Phi.size             () ){ std::cerr << "[ABORT] Wrong index for Phi"                    << std::endl, abort(); } return m_Phi.at             (index); }
+  Int_t    GetVaneID          ( Int_t index ){ if( index>=m_VaneID.size          () ){ std::cerr << "[ABORT] Wrong index for VaneID"                 << std::endl, abort(); } return m_VaneID.at          (index); }
+  Double_t GetgT              ( Int_t index ){ if( index>=m_gT.size              () ){ std::cerr << "[ABORT] Wrong index for gT"                     << std::endl, abort(); } return m_gT.at              (index); }
+  Double_t GetpT              ( Int_t index ){ if( index>=m_pT.size              () ){ std::cerr << "[ABORT] Wrong index for pT"                     << std::endl, abort(); } return m_pT.at              (index); }
+  Int_t    GetpID             ( Int_t index ){ if( index>=m_pID.size             () ){ std::cerr << "[ABORT] Wrong index for pID"                    << std::endl, abort(); } return m_pID.at             (index); }
+  Double_t GetEachDepE        ( Int_t index ){ if( index>=m_EachDepE.size        () ){ std::cerr << "[ABORT] Wrong index for EachDepE"               << std::endl, abort(); } return m_EachDepE.at        (index); }
+  Int_t    GetClose_Hough_phiz( Int_t index ){ if( index>=m_close_hough_phiz.size() ){ std::cerr << "[ABORT] Wrong index for close-hough-line(phiz)" << std::endl, abort(); } return m_close_hough_phiz.at(index); }
+  Int_t    GetClusterNo       ( Int_t index ){ if( index>=m_clusterNo.size       () ){ std::cerr << "[ABORT] Wrong index for clusterNo"              << std::endl, abort(); } return m_clusterNo.at       (index); }
 
 
   
-  TH1D*    GetHist_Hough_phiz_Residual( Int_t index ){ if( index>=m_hist_hough_phiz_resi.size()   ){ std::cerr << "[ABORT] Wrong index for slope of hough-line(phiz)"        << std::endl, abort(); } return m_hist_hough_phiz_resi.at(index); }
-  TH1D*    GetHist_Hough_phiz_Slope   ( Int_t index ){ if( index>=m_hist_hough_phiz_slope.size()  ){ std::cerr << "[ABORT] Wrong index for offset of hough-line(phiz)"       << std::endl, abort(); } return m_hist_hough_phiz_slope.at(index); }
-  TH1D*    GetHist_Hough_phiz_Offset  ( Int_t index ){ if( index>=m_hist_hough_phiz_offset.size() ){ std::cerr << "[ABORT] Wrong index for slope-offset of hough-line(phiz)" << std::endl, abort(); } return m_hist_hough_phiz_offset.at(index); }
-  TH2D*    GetHist_Hough_phiz_Slope_Offset( Int_t index ){ if( index>=m_hist_hough_phiz_slope_offset.size() ){ std::cerr << "[ABORT] Wrong index for residual of hough-line(phiz)" << std::endl, abort(); } return m_hist_hough_phiz_slope_offset.at(index); }
-  TH2D*    GetHist_Hough_phiz    ( Int_t index ){ if( index>=m_hist_hough_phiz.size     () ){ std::cerr << "[ABORT] Wrong index for hough-plane(phiz)"            << std::endl, abort(); } return m_hist_hough_phiz.at     (index); }
-  TF1*     GetFunc_Hough_phiz    ( Int_t index ){ if( index>=m_func_hough_phiz.size     () ){ std::cerr << "[ABORT] Wrong index for hough-fit line(phiz)"         << std::endl, abort(); } return m_func_hough_phiz.at     (index); }
-  Double_t GetPar0_Hough_phiz( Int_t index ){ if( index>=m_hough_phiz_par0.size() ){ std::cerr << "[ABORT] Wrong index for hough-line parameter0(phiz)" << std::endl, abort(); } return m_hough_phiz_par0.at(index); }
-  Double_t GetPar1_Hough_phiz( Int_t index ){ if( index>=m_hough_phiz_par1.size() ){ std::cerr << "[ABORT] Wrong index for hough-line parameter1(phiz)" << std::endl, abort(); } return m_hough_phiz_par1.at(index); }
+  TH1D*    GetHist_Hough_phiz_Residual    ( Int_t index ){ if( index>=m_hist_hough_phiz_resi.size        () ){ std::cerr << "[ABORT] Wrong index for slope of hough-line(phiz)"        << std::endl, abort(); } return m_hist_hough_phiz_resi.at        (index); }
+  TH1D*    GetHist_Hough_phiz_Slope       ( Int_t index ){ if( index>=m_hist_hough_phiz_slope.size       () ){ std::cerr << "[ABORT] Wrong index for offset of hough-line(phiz)"       << std::endl, abort(); } return m_hist_hough_phiz_slope.at       (index); }
+  TH1D*    GetHist_Hough_phiz_Offset      ( Int_t index ){ if( index>=m_hist_hough_phiz_offset.size      () ){ std::cerr << "[ABORT] Wrong index for slope-offset of hough-line(phiz)" << std::endl, abort(); } return m_hist_hough_phiz_offset.at      (index); }
+  TH2D*    GetHist_Hough_phiz_Slope_Offset( Int_t index ){ if( index>=m_hist_hough_phiz_slope_offset.size() ){ std::cerr << "[ABORT] Wrong index for residual of hough-line(phiz)"     << std::endl, abort(); } return m_hist_hough_phiz_slope_offset.at(index); }
+  TH2D*    GetHist_Hough_phiz             ( Int_t index ){ if( index>=m_hist_hough_phiz.size             () ){ std::cerr << "[ABORT] Wrong index for hough-plane(phiz)"                << std::endl, abort(); } return m_hist_hough_phiz.at             (index); }
+  TF1*     GetFunc_Hough_phiz             ( Int_t index ){ if( index>=m_func_hough_phiz.size             () ){ std::cerr << "[ABORT] Wrong index for hough-fit line(phiz)"             << std::endl, abort(); } return m_func_hough_phiz.at             (index); }
+  Double_t GetPar0_Hough_phiz             ( Int_t index ){ if( index>=m_hough_phiz_par0.size             () ){ std::cerr << "[ABORT] Wrong index for hough-line parameter0(phiz)"      << std::endl, abort(); } return m_hough_phiz_par0.at             (index); }
+  Double_t GetPar1_Hough_phiz             ( Int_t index ){ if( index>=m_hough_phiz_par1.size             () ){ std::cerr << "[ABORT] Wrong index for hough-line parameter1(phiz)"      << std::endl, abort(); } return m_hough_phiz_par1.at             (index); }
 
   private:
 
   const Int_t    m_geom_nvane;
   const Double_t m_geom_r_inner;
   const Double_t m_geom_r_outer;
+  const Double_t m_geom_r_pole;
   const Double_t m_geom_z_min;
   const Double_t m_geom_z_max;
   Double_t*      m_geom_phi;

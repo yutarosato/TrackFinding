@@ -1,12 +1,12 @@
 #include "setting.h"
 
-const Int_t    fl_message         = 0; // 2(debug), 1(normal), 0(silent)
-const Int_t    fl_show            = 0;
+const Int_t    fl_message         = 1; // 2(debug), 1(normal), 0(silent)
+const Int_t    fl_show            = 10;
 const Double_t th_show_energy_min = 200.0;
 const Double_t th_show_energy_max = 400.0;
 const Int_t    threshold_success  = 3; // Hit definition : >= threshold_success/range_success
 const Int_t    range_success      = 3;
-const Int_t    fl_batch           = 2; // 0(show), 1(batch), 2(batch&save)
+const Int_t    fl_batch           = 0; // 0(show), 1(batch), 2(batch&save)
 
  // seed of cluster
 std::vector<TGraph*> vg_seed_hit_xy;
@@ -20,7 +20,7 @@ std::vector<TGraph*> vg_missing_hit_phiz;   // missing hits
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Int_t main( Int_t argc, Char_t** argv ){
   gROOT->SetBatch(fl_batch);
-  TStyle* sty = Style(1);
+  TStyle* sty = Style(0);
   TApplication app( "app", &argc, argv );
   if( app.Argc()<2 )
     std::cerr << "Wrong input" << std::endl
@@ -46,6 +46,8 @@ Int_t main( Int_t argc, Char_t** argv ){
   set_readbranch_body ( tree_body  );
   set_readbranch_decay( tree_decay );
 
+  HitsArray* hits_info = new HitsArray();
+
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   // <Make Canvas>
   TCanvas* can_1evt = new TCanvas( "can_1evt", "can_1evt", 1400, 900 );
@@ -69,16 +71,34 @@ Int_t main( Int_t argc, Char_t** argv ){
   hist_eff ->SetMarkerColor(2);
   
   // Muon Orbit
-  TArc* g_orbit = new TArc( 0, 0, 330 );
-  g_orbit->SetFillStyle(0);
+  TArc* det_orbit = new TArc( 0, 0, 330 );
+  det_orbit->SetFillStyle(0);
+  det_orbit->SetLineColor(kGray);
 
+  // Detector Geometory
+  TLine** det_vane = new TLine*[hits_info->GetNVane()];
+  for( Int_t ivane=0; ivane<hits_info->GetNVane(); ivane++ ){
+    Double_t phi = hits_info->GetGeomPhi(ivane);
+    det_vane[ivane] = new TLine( hits_info->GetGeomRinner()*TMath::Cos(hits_info->GetGeomPhi(ivane)),
+			       hits_info->GetGeomRinner()*TMath::Sin(hits_info->GetGeomPhi(ivane)),
+			       hits_info->GetGeomRouter()*TMath::Cos(hits_info->GetGeomPhi(ivane)),
+			       hits_info->GetGeomRouter()*TMath::Sin(hits_info->GetGeomPhi(ivane))
+			       );
+    det_vane[ivane]->SetLineWidth(1);
+    det_vane[ivane]->SetLineColor(kGray);
+  }
+
+  TArc* det_pole = new TArc( 0, 0, hits_info->GetGeomRpole() );
+  det_pole->SetFillStyle(0);
+  det_pole->SetLineColor(kGray);
+
+  
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
   Int_t nevt       = tree_body->GetEntries();
   if( fl_batch==2 ){
     can_1evt->Print( Form("pic/tracking_%d_%d_success.pdf[",(Int_t)th_show_energy_min,(Int_t)th_show_energy_max) );
     can_1evt->Print( Form("pic/tracking_%d_%d_failure.pdf[",(Int_t)th_show_energy_min,(Int_t)th_show_energy_max) );
   }
-  HitsArray* hits_info = new HitsArray();
   
   for( Int_t ievt=0; ievt<nevt; ievt++ ){ // START EVENT-LOOP
     //if( ievt!=669 ) continue; // tmppppp
@@ -110,6 +130,20 @@ Int_t main( Int_t argc, Char_t** argv ){
 					);
     g_decvec_xy  ->SetLineColor(2);
     g_decvec_phiz->SetLineColor(2);
+
+    // ideal track
+    Double_t ideal_r = sqrt( pow(td_Dmom_x[1],2) + pow(td_Dmom_y[1],2) )/0.9;
+    Double_t ideal_slope = TMath::Abs(td_Dmom_x[1]/td_Dmom_y[1]);
+    Double_t ideal_x0 = td_Dpos_x[0];
+    Double_t ideal_y0 = td_Dpos_y[0];
+    if( td_Dmom_y[1] > 0 ) ideal_x0 += ideal_r/sqrt( 1 + pow(ideal_slope,2) );
+    else                   ideal_x0 -= ideal_r/sqrt( 1 + pow(ideal_slope,2) );
+    if( td_Dmom_x[1] > 0 ) ideal_y0 -= ideal_r*ideal_slope/sqrt( 1 + pow(ideal_slope,2) );
+    else                   ideal_y0 += ideal_r*ideal_slope/sqrt( 1 + pow(ideal_slope,2) );
+    TArc* g_ideal_trk = new TArc( ideal_x0, ideal_y0, ideal_r );
+    g_ideal_trk->SetFillStyle(0);
+    g_ideal_trk->SetLineColor(kGray);
+    g_ideal_trk->SetLineStyle(3);
     
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Hits
@@ -170,9 +204,12 @@ Int_t main( Int_t argc, Char_t** argv ){
       for( Int_t ipad=0; ipad<12; ipad++ ) can_1evt->cd(ipad+1)->Clear();
       can_1evt->cd(1);
       gPad->DrawFrame(-350,-350,350,350, Form("EvtNo:%d, E(e+)=%.1f MeV, P(e+) = (%.1f, %.1f, %.1f);X [mm];Y [mm]",td_eventNum,td_DtEnergy[1],td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]));
-      g_orbit      ->Draw("Lsame");
+      for( Int_t ivane=0; ivane<hits_info->GetNVane(); ivane++ ) det_vane[ivane]->Draw("same");
+      det_orbit    ->Draw("Lsame");
+      det_pole     ->Draw("Lsame");
       g_decpoint_xy->Draw("Psame");
       g_decvec_xy  ->Draw();
+      g_ideal_trk  ->Draw("same");
       if( g_hitpoint_xy      ->GetN() ) g_hitpoint_xy      ->Draw("Psame");
       if( g_hitpoint_xy_other->GetN() ) g_hitpoint_xy_other->Draw("Psame");
 
@@ -253,9 +290,12 @@ Int_t main( Int_t argc, Char_t** argv ){
 	if( hits_info->GetNHoughLines() ) hits_info->GetHist_Hough_phiz_Residual(hits_info->GetNHoughLines()-1)->Draw();
 	can_1evt->cd(5); // clustered hits on x-y plane
 	gPad->DrawFrame(-350,-350,350,350, Form("EvtNo:%d, E(e+)=%.1f MeV, P(e+) = (%.1f, %.1f, %.1f), Clustered Hits;X [mm];Y [mm]",td_eventNum,td_DtEnergy[1],td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]));
-	g_orbit      ->Draw("Lsame");
+	for( Int_t ivane=0; ivane<hits_info->GetNVane(); ivane++ ) det_vane[ivane]->Draw("same");
+	det_orbit    ->Draw("Lsame");
+	det_pole     ->Draw("Lsame");
 	g_decpoint_xy->Draw("Psame");
 	g_decvec_xy  ->Draw();
+	g_ideal_trk  ->Draw("same");
 	for( Int_t ivec=0; ivec<vg_clustered_hit_xy.size(); ivec++ ){ if( vg_clustered_hit_xy.at(ivec)->GetN() ) vg_clustered_hit_xy.at(ivec)->Draw("Psame"); }
 	for( Int_t ivec=0; ivec<vg_missing_hit_xy.size  (); ivec++ ){ if( vg_missing_hit_xy.at  (ivec)->GetN() ) vg_missing_hit_xy.at  (ivec)->Draw("Psame"); }
 
@@ -380,6 +420,7 @@ Int_t main( Int_t argc, Char_t** argv ){
       delete g_decpoint_phiz;
       delete g_decvec_xy;
       delete g_decvec_phiz;
+      delete g_ideal_trk;
       delete g_hitpoint_xy;
       delete g_hitpoint_phiz;
       delete g_hitpoint_xy_other;
@@ -455,9 +496,15 @@ Int_t main( Int_t argc, Char_t** argv ){
   std::cout << "finish" << std::endl;
   if( !gROOT->IsBatch() ) app.Run();
 
+  delete det_orbit;
+  for( Int_t ivane=0; ivane<hits_info->GetNVane(); ivane++ ) delete det_vane[ivane];
+  delete[] det_vane;
+  delete det_pole;
+
+  
   delete tree_body;
   delete tree_decay;
-  delete g_orbit;
+
   delete hist_Epos_Nhit;
   delete hist_Epos;
   delete hist_Nhit;

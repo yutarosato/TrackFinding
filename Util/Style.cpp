@@ -90,7 +90,7 @@ TStyle* Style( Int_t fl ){
   //set the tick mark style
   myStyle->SetPadTickX(0);
   myStyle->SetPadTickY(0);
-  if( fl1!=1 ) myStyle->SetTickLength( 0, "XY" );
+  //if( fl1!=1 ) myStyle->SetTickLength( 0, "XY" );
 
   //turn off stats
   //myStyle->SetOptStat(0);
