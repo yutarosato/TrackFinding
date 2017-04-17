@@ -217,7 +217,7 @@ void HitsArray::HoughTransform_phiz(){
 		      +m_Z.at(ivec)*TMath::Sin((double)istep*TMath::Pi()/180));
       Double_t theta = istep;
       tmp_vector.push_back( rho );
-      if( (10.0 < theta && theta < 30.0) || (150.0 < theta &&  theta < 170.0) ) continue; // tmpppppp
+      if( (3.0 < theta && theta < 30.0) || (150.0 < theta) ) continue; // tmpppppp
       hist_hough_phiz->Fill( theta+1.0e-5, rho );
     }
     m_hough_phiz_rho.push_back( tmp_vector );
@@ -240,8 +240,8 @@ Int_t HitsArray::HoughFit_phiz( Int_t fl_message ){
   Double_t theta = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinLowEdge(max_xbin);
   Double_t rho   = m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetYaxis()->GetBinLowEdge(max_ybin) + m_hist_hough_phiz.at(m_hist_hough_phiz.size()-1)->GetXaxis()->GetBinWidth(max_ybin)/2.0;
   Double_t infinity = 1.0e+10;
-  Double_t par1 = ( theta < 3.0 ? -1.0/TMath::Tan(theta*TMath::Pi()/180.0)*180.0/TMath::Pi() : infinity                        );
-  Double_t par0 = ( theta < 3.0 ?  rho/TMath::Sin(theta*TMath::Pi()/180.0)                   : -rho*infinity*TMath::Pi()/180.0 );
+  Double_t par1 = ( theta >= 3.0 ? -1.0/TMath::Tan(theta*TMath::Pi()/180.0)*180.0/TMath::Pi() : infinity                        );
+  Double_t par0 = ( theta >= 3.0 ?  rho/TMath::Sin(theta*TMath::Pi()/180.0)                   : -rho*infinity*TMath::Pi()/180.0 );
 
   // testing
   for( Int_t ivec=0; ivec<m_hough_phiz_rho.size(); ivec++ ){
