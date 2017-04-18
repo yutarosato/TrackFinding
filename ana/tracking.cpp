@@ -1,12 +1,12 @@
 #include "setting.h"
 
 const Int_t    fl_message         = 1; // 2(debug), 1(normal), 0(silent)
-const Int_t    fl_show            = 0;
-const Double_t th_show_energy_min =   0.0;
-const Double_t th_show_energy_max = 100.0;
+const Int_t    fl_show            = 1000;
+const Double_t th_show_energy_min = 150.0;
+const Double_t th_show_energy_max = 400.0;
 const Int_t    threshold_success  = 3; // Hit definition : >= threshold_success/range_success
 const Int_t    range_success      = 3;
-const Int_t    fl_batch           = 2; // 0(show), 1(batch), 2(batch&save)
+const Int_t    fl_batch           = 0; // 0(show), 1(batch), 2(batch&save)
 
 // seed of cluster
 std::vector<TGraph*> vg_seed_hit_xy;
@@ -298,7 +298,6 @@ Int_t main( Int_t argc, Char_t** argv ){
  	for( Int_t ivec=0; ivec<vg_missing_hit_xy.size  (); ivec++ ){ if( vg_missing_hit_xy.at  (ivec)->GetN() ) vg_missing_hit_xy.at  (ivec)->Draw("Psame"); }
  	for( Int_t ivec=0; ivec<vg_clustered_hit_xy.size(); ivec++ ){ if( vg_clustered_hit_xy.at(ivec)->GetN() ) vg_clustered_hit_xy.at(ivec)->Draw("Psame"); }
 
-
  	can_1evt->cd(6); // clustered hits on phi-z plane
  	gPad           ->DrawFrame(0.0,-250,2.0*TMath::Pi(),250, Form("EvtNo:%d, E(e+)=%.1f MeV, P(e+) = (%.1f, %.1f, %.1f), Clustered Hits;#phi [rad];Z [mm]",td_eventNum,td_DtEnergy[1],td_Dmom_x[1],td_Dmom_y[1],td_Dmom_z[1]));
  	g_decpoint_phiz->Draw("Psame");
@@ -407,6 +406,7 @@ Int_t main( Int_t argc, Char_t** argv ){
       }
 
       if( fl_batch==2 ){
+	can_1evt->Update();
 	if( fl_fin_success ) can_1evt->Print( Form("pic/tracking_%d_%d_success.pdf",(Int_t)th_show_energy_min,(Int_t)th_show_energy_max) );
 	else                 can_1evt->Print( Form("pic/tracking_%d_%d_failure.pdf",(Int_t)th_show_energy_min,(Int_t)th_show_energy_max) );
       }
@@ -445,6 +445,7 @@ Int_t main( Int_t argc, Char_t** argv ){
   } // END EVENT-LOOP
 
   if( fl_batch==2 ){
+    can_1evt->Update();
     can_1evt->Print( Form("pic/tracking_%d_%d_success.pdf]",(Int_t)th_show_energy_min,(Int_t)th_show_energy_max) );
     can_1evt->Print( Form("pic/tracking_%d_%d_failure.pdf]",(Int_t)th_show_energy_min,(Int_t)th_show_energy_max) );
   }
