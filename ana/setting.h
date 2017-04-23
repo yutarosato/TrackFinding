@@ -79,7 +79,7 @@ Float_t td_Dpos_y  [4];
 Float_t td_Dpos_z  [4];
 Float_t td_DtEnergy[4];
 
-Int_t set_readbranch_body( TChain* tree ){
+void set_readbranch_body( TChain* tree ){
   tree->SetBranchAddress( "eventNum",    &tb_eventNum    );
   tree->SetBranchAddress( "hitInfo",     &tb_hitInfo     );
   tree->SetBranchAddress( "bodyTyp",     &tb_bodyTyp     );
@@ -99,10 +99,10 @@ Int_t set_readbranch_body( TChain* tree ){
   tree->SetBranchAddress( "pos_z",       &tb_pos_z       );
   tree->SetBranchAddress( "tEnergy",     &tb_tEnergy     );
 
-  return 0;
+  return;
 }
 
-Int_t set_readbranch_decay( TChain* tree ){
+void set_readbranch_decay( TChain* tree ){
   tree->SetBranchAddress( "eventNum", &td_eventNum );
   tree->SetBranchAddress( "Dptime",    td_Dptime   );
   tree->SetBranchAddress( "Dgtime",    td_Dgtime   );
@@ -121,15 +121,63 @@ Int_t set_readbranch_decay( TChain* tree ){
   tree->SetBranchAddress( "Dpos_z",    td_Dpos_z    );
   tree->SetBranchAddress( "DtEnergy",  td_DtEnergy  );
 
-  return 0;
-}
-
-Double_t phi_uk(Double_t y, Double_t x){ // 0~phi~2pi : this definition is used in Ueno-san's codes
-  Double_t phi = TMath::ATan2(y,x);
-  if( phi<0 ) phi += 2*TMath::Pi();
-  return phi;
+  return;
 }
 
 
+// output tree for track fitting
+Int_t t_event;
+Int_t t_ntrk;
+Int_t t_true_trk;
+std::vector<Double_t> t_X;
+std::vector<Double_t> t_Y;
+std::vector<Double_t> t_Z;
+std::vector<Double_t> t_gT;
+std::vector<Double_t> t_pT;
+std::vector<Double_t> t_pID;
+std::vector<Double_t> t_EachDepE;
+
+Double_t t_gen_X;
+Double_t t_gen_Y;
+Double_t t_gen_Z;
+Double_t t_gen_gT;
+Double_t t_gen_pT;
+Double_t t_gen_PX;
+Double_t t_gen_PY;
+Double_t t_gen_PZ;
+
+void set_outtree( TTree* tree ){
+  tree->Branch( "event",      &t_event,    "event/I"    );
+  tree->Branch( "ntrk",       &t_ntrk,     "ntrk/I"     );
+  tree->Branch( "true_trk",   &t_true_trk, "true_trk/I" );
+  tree->Branch( "t_X",        &t_X                      );
+  tree->Branch( "t_Y",        &t_Y                      );
+  tree->Branch( "t_Z",        &t_Z                      );
+  tree->Branch( "t_gT",       &t_gT                     );
+  tree->Branch( "t_pT",       &t_pT                     );
+  tree->Branch( "t_pID",      &t_pID                    );
+  tree->Branch( "t_EachDepE", &t_EachDepE               );
+  tree->Branch( "gen_X",      &t_gen_X,     "gen_X/D"   );
+  tree->Branch( "gen_Y",      &t_gen_Y,     "gen_Y/D"   );
+  tree->Branch( "gen_Z",      &t_gen_Z,     "gen_Z/D"   );
+  tree->Branch( "gen_gT",     &t_gen_gT,    "gen_gT/D"  );
+  tree->Branch( "gen_pT",     &t_gen_pT,    "gen_pT/D"  );
+  tree->Branch( "genPX",      &t_gen_PX,    "gen_PX/D"  );
+  tree->Branch( "genPY",      &t_gen_PY,    "gen_PY/D"  );
+  tree->Branch( "genPZ",      &t_gen_PZ,    "gen_PZ/D"  );
+
+  return;
+}
+
+void clear_outtree(){
+  t_X.clear();
+  t_Y.clear();
+  t_Z.clear();
+  t_gT.clear();
+  t_pT.clear();
+  t_pID.clear();
+  t_EachDepE.clear();
+  return;
+}
 
 #endif

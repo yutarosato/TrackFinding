@@ -1,7 +1,7 @@
 #include "setting.h"
 
 const Int_t    fl_message         = 1; // 2(debug), 1(normal), 0(silent)
-const Int_t    fl_show            = 1000;
+const Int_t    fl_show            = 0;
 const Double_t th_show_energy_min = 150.0;
 const Double_t th_show_energy_max = 400.0;
 const Int_t    threshold_success  = 3; // Hit definition : >= threshold_success/range_success
@@ -93,6 +93,11 @@ Int_t main( Int_t argc, Char_t** argv ){
   
   
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
+  // Output file for Track Fitting
+  TTree* tree = new TTree( "trkfinding", "trkfinding" );
+  set_outtree( tree );
+  
+  //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
   Int_t nevt       = tree_body->GetEntries();
   if( fl_batch==2 ){
     can_1evt->Print( Form("pic/tracking_%d_%d_success.pdf[",(Int_t)th_show_energy_min,(Int_t)th_show_energy_max) );
@@ -101,29 +106,29 @@ Int_t main( Int_t argc, Char_t** argv ){
   
   for( Int_t ievt=0; ievt<nevt; ievt++ ){ // START EVENT-LOOP
     //if( ievt!=669 ) continue; // tmppppp
+    if( ievt==200 ) break; // tmppppp
     if( fl_message && (cnt_show < fl_show || ievt==nevt-1) ) std::cout << "+++++++++++++++ ievt = " << ievt << " ++++++++++++++++++++" << std::endl;
     if( ievt%(nevt/100)==0 ) std::cout << "........ " << ievt/(nevt/100) << "%" << std::endl;
     // read event
     hits_info ->ClearEvent();
     tree_body ->GetEntry(ievt);
     tree_decay->GetEntry(ievt);
-    
     //if( !(td_DtEnergy[1] >= th_show_energy_min && td_DtEnergy[1] < th_show_energy_max) ) continue; // tmpppppp
     
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Muon Decay Information
     TGraph* g_decpoint_xy   = new TGraph(); g_decpoint_xy  ->SetMarkerColor(2);
     TGraph* g_decpoint_phiz = new TGraph(); g_decpoint_phiz->SetMarkerColor(2);
-    g_decpoint_xy  ->SetPoint( g_decpoint_xy  ->GetN(), td_Dpos_x[0],                      td_Dpos_y[0] );
-    g_decpoint_phiz->SetPoint( g_decpoint_phiz->GetN(), phi_uk(td_Dpos_y[0],td_Dpos_x[0]), td_Dpos_z[0] );
+    g_decpoint_xy  ->SetPoint( g_decpoint_xy  ->GetN(), td_Dpos_x[0],                                 td_Dpos_y[0] );
+    g_decpoint_phiz->SetPoint( g_decpoint_phiz->GetN(), HitsArray::Phi_uk(td_Dpos_y[0],td_Dpos_x[0]), td_Dpos_z[0] );
     
     TArrow* g_decvec_xy = new TArrow( td_Dpos_x[0],                   td_Dpos_y[0],
  				      td_Dpos_x[0]+100*td_Dmomv_x[1], td_Dpos_y[0]+100*td_Dmomv_y[1],
  				      0.01,">"
  				      );
-    TArrow* g_decvec_phiz = new TArrow( phi_uk(td_Dpos_y[0],td_Dpos_x[0]), td_Dpos_z[0],
- 					phi_uk(td_Dpos_y[0],td_Dpos_x[0]) + 
- 					( phi_uk(td_Dpos_y[0]+td_Dmomv_y[1],td_Dpos_x[0]+td_Dmomv_x[1]) - phi_uk(td_Dpos_y[0],td_Dpos_x[0]) )*300,
+    TArrow* g_decvec_phiz = new TArrow( HitsArray::Phi_uk(td_Dpos_y[0],td_Dpos_x[0]), td_Dpos_z[0],
+ 					HitsArray::Phi_uk(td_Dpos_y[0],td_Dpos_x[0]) + 
+ 					( HitsArray::Phi_uk(td_Dpos_y[0]+td_Dmomv_y[1],td_Dpos_x[0]+td_Dmomv_x[1]) - HitsArray::Phi_uk(td_Dpos_y[0],td_Dpos_x[0]) )*300,
  					td_Dpos_z[0] + 300*td_Dmomv_z[1],
  					0.01,">"
  					);
@@ -347,6 +352,42 @@ Int_t main( Int_t argc, Char_t** argv ){
     if( fl_fin_success ) hist_Nrec->Fill( td_DtEnergy[1] );
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // make output file for track fitting
+    t_event    = tb_eventNum;
+    t_ntrk     = hits_info->GetNHoughLines();
+    t_gen_X   = td_Dpos_x[0];
+    t_gen_Y   = td_Dpos_y[0];
+    t_gen_Z   = td_Dpos_z[0];
+    t_gen_gT  = td_Dptime[0];
+    t_gen_pT  = td_Dgtime[0];
+    t_gen_PX  = td_Dmom_x[1];
+    t_gen_PY  = td_Dmom_y[1];
+    t_gen_PZ  = td_Dmom_z[1];
+
+    for( Int_t iline=0; iline<t_ntrk; iline++ ){ // START LINE-LOOP
+      std::multimap<Int_t,Int_t> tMap;
+      for( Int_t ihit=0; ihit<hits_info->GetNhits(); ihit++ ){
+	if( hits_info->GetClusterNo(ihit) != iline ) continue;
+	tMap.insert( std::make_pair(hits_info->GetSequenceNo(ihit),ihit) );
+      }
+      std::multimap<Int_t,Int_t>::iterator it = tMap.begin();
+      std::vector<Int_t> sequenceNo;
+      while( it != tMap.end() ){ sequenceNo.push_back( (*it).second ); it++; }
+      for( Int_t iseq=0; iseq<sequenceNo.size(); iseq++ ){
+	t_X.push_back       ( hits_info->GetX       (sequenceNo.at(iseq)) );
+	t_Y.push_back       ( hits_info->GetY       (sequenceNo.at(iseq)) );
+	t_Z.push_back       ( hits_info->GetZ       (sequenceNo.at(iseq)) );
+	t_gT.push_back      ( hits_info->GetgT      (sequenceNo.at(iseq)) );
+	t_pT.push_back      ( hits_info->GetpT      (sequenceNo.at(iseq)) );
+	t_pID.push_back     ( hits_info->GetpID     (sequenceNo.at(iseq)) );
+	t_EachDepE.push_back( hits_info->GetEachDepE(sequenceNo.at(iseq)) );
+      }
+      t_true_trk = ( hits_info->GetClusterNo(hits_info->GetOrdergT(0))==iline ? 1 : 0 );
+      tree->Fill();
+      clear_outtree();
+    } // END LINE-LOOP
+
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     // Draw
     if( ((cnt_show < fl_show || ievt==nevt-1) || fl_batch==2) && td_DtEnergy[1] >= th_show_energy_min && td_DtEnergy[1] < th_show_energy_max ){
@@ -493,6 +534,10 @@ Int_t main( Int_t argc, Char_t** argv ){
 
   can->Update();
   if( fl_batch==2 ) can->Print("pic/tracking_summary.eps");
+
+  TFile outfile( "test.root", "RECREATE" );
+  tree->Write();
+  outfile.Close();
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   
   std::cout << "finish" << std::endl;
@@ -516,6 +561,7 @@ Int_t main( Int_t argc, Char_t** argv ){
   delete g_hitpoint_phiz_int;
   delete g_hitpoint_vanez_int;
   delete hits_info;
+  delete tree;
   
   return 0;
   

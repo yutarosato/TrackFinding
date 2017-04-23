@@ -39,6 +39,7 @@ void HitsArray::InputHits( Int_t index, Double_t x, Double_t y, Double_t z, Doub
   m_fl_hough_phiz.push_back   ( 1                       );
   m_close_hough_phiz.push_back( -999                    );
   m_clusterNo.push_back       ( -999                    );
+  m_sequenceNo.push_back      ( -999                    );
 }
 
 void HitsArray::ClearEvent(){
@@ -80,7 +81,8 @@ void HitsArray::ClearEvent(){
   m_func_hough_phiz.clear       ();  
   m_hist_hough_phiz_resi.clear  ();
 
-  m_clusterNo.clear();
+  m_clusterNo.clear ();
+  m_sequenceNo.clear();
   
   return;
 }
@@ -103,6 +105,7 @@ void HitsArray::Print( Int_t fl_message ){
       	      << std::setw(2) << std::right << m_fl_hough_phiz.at   (ivec)    << ", "
       	      << std::setw(4) << std::right << m_close_hough_phiz.at(ivec)    << ", "
       	      << std::setw(4) << std::right << m_clusterNo.at       (ivec)    << ", "
+      	      << std::setw(4) << std::right << m_sequenceNo.at      (ivec)
 	      << std::endl;
   }
   return;
@@ -126,6 +129,7 @@ void HitsArray::Print_VaneID_Order( Int_t fl_message ){
       	      << std::setw(2) << std::right << m_fl_hough_phiz.at   (m_order_VaneID.at(ivane))    << ", "
       	      << std::setw(4) << std::right << m_close_hough_phiz.at(m_order_VaneID.at(ivane))    << ", "
       	      << std::setw(4) << std::right << m_clusterNo.at       (m_order_VaneID.at(ivane))    << ", "
+      	      << std::setw(4) << std::right << m_sequenceNo.at      (m_order_VaneID.at(ivane))
 	      << std::endl;
   }
   return;
@@ -149,6 +153,7 @@ void HitsArray::Print_gT_Order( Int_t fl_message ){
       	      << std::setw(2) << std::right << m_fl_hough_phiz.at   (m_order_gT.at(ivane))    << ", "
       	      << std::setw(4) << std::right << m_close_hough_phiz.at(m_order_gT.at(ivane))    << ", "
       	      << std::setw(4) << std::right << m_clusterNo.at       (m_order_gT.at(ivane))    << ", "
+      	      << std::setw(4) << std::right << m_sequenceNo.at      (m_order_gT.at(ivane))
 	      << std::endl;
   }
   return;
@@ -172,6 +177,7 @@ void HitsArray::Print_Z_Order( Int_t fl_message ){
       	      << std::setw(2) << std::right << m_fl_hough_phiz.at   (m_order_Z.at(ivane))    << ", "
       	      << std::setw(4) << std::right << m_close_hough_phiz.at(m_order_Z.at(ivane))    << ", "
       	      << std::setw(4) << std::right << m_clusterNo.at       (m_order_Z.at(ivane))    << ", "
+      	      << std::setw(4) << std::right << m_sequenceNo.at      (m_order_Z.at(ivane))
 	      << std::endl;
   }
   return;
@@ -487,7 +493,22 @@ Int_t HitsArray::Clustering_3D( Int_t fl_message ){
       if( fl_message > 1 ) std::cout << "         => can not find hit points by extrapolation : dev_min = " << dev_min << ", cnt_miss_backward = " << cnt_miss_backward << std::endl;
     }
   }
-  
+
+  // assign sequence number in the cluster
+  {
+    Int_t cnt_seq = 0;
+    if( m_gT.at(m_order_VaneID.at(cluster_index.at(0))) < m_gT.at(m_order_VaneID.at(cluster_index.at(cluster_index.size()-1))) ){
+      for( Int_t ihit=0; ihit<cluster_index.size(); ihit++ ){
+	m_sequenceNo.at( m_order_VaneID.at(cluster_index.at(ihit)) ) = cnt_seq;
+	cnt_seq++;
+      }
+    }else{
+      for( Int_t ihit=cluster_index.size()-1; ihit>=0; ihit-- ){
+	m_sequenceNo.at( m_order_VaneID.at(cluster_index.at(ihit)) ) = cnt_seq;
+	cnt_seq++;
+      }
+    }
+  }
 
   
   if( fl_message > 1 ) std::cout << "   *****[FINISH : Clustering]***** : cluster size : " << cluster_index.size() << std::endl;

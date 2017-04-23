@@ -23,7 +23,7 @@ public:
   Int_t Clustering_3D         ( Int_t fl_message=0 );
   Int_t Clustering_deltaray   ( Int_t fl_message=0 );
 
-  Double_t Phi_uk        ( Double_t y, Double_t x );
+  static Double_t Phi_uk ( Double_t y, Double_t x );
   Int_t    GetVaneID     ( Double_t f_phi );
   Int_t    GetNVane      (){ return m_geom_nvane;             }
   Int_t    GetNhits      (){ return m_X.size();               }
@@ -51,7 +51,7 @@ public:
   Double_t GetEachDepE        ( Int_t index ){ if( index>=m_EachDepE.size        () ){ std::cerr << "[ABORT] Wrong index for EachDepE"               << std::endl, abort(); } return m_EachDepE.at        (index); }
   Int_t    GetClose_Hough_phiz( Int_t index ){ if( index>=m_close_hough_phiz.size() ){ std::cerr << "[ABORT] Wrong index for close-hough-line(phiz)" << std::endl, abort(); } return m_close_hough_phiz.at(index); }
   Int_t    GetClusterNo       ( Int_t index ){ if( index>=m_clusterNo.size       () ){ std::cerr << "[ABORT] Wrong index for clusterNo"              << std::endl, abort(); } return m_clusterNo.at       (index); }
-
+  Int_t    GetSequenceNo      ( Int_t index ){ if( index>=m_sequenceNo.size      () ){ std::cerr << "[ABORT] Wrong index for sequenceNo"             << std::endl, abort(); } return m_sequenceNo.at      (index); }
 
   
   TH1D*    GetHist_Hough_phiz_Residual    ( Int_t index ){ if( index>=m_hist_hough_phiz_resi.size        () ){ std::cerr << "[ABORT] Wrong index for slope of hough-line(phiz)"        << std::endl, abort(); } return m_hist_hough_phiz_resi.at        (index); }
@@ -110,7 +110,8 @@ public:
   std::vector<TH1D*> m_hist_hough_phiz_resi;
 
   // Clustering
-  std::vector<Int_t> m_clusterNo; // cluster number (initial value:-999)
+  std::vector<Int_t> m_clusterNo;    // cluster number (initial value:-999)
+  std::vector<Int_t> m_sequenceNo;   // sequence number in the cluster (initial value : -999, start from zero)
 
  public:
   // Extrapolation
