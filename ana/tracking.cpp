@@ -1,6 +1,6 @@
 #include "setting.h"
 
-const Int_t    fl_message         = 1; // 2(debug), 1(normal), 0(silent)
+const Int_t    fl_message         = 2; // 2(debug), 1(normal), 0(silent)
 const Int_t    fl_show            = 0;
 const Double_t th_show_energy_min = 150.0;
 const Double_t th_show_energy_max = 400.0;

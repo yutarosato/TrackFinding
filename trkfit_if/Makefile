@@ -10,7 +10,7 @@ trkfit_if:trkfit_if.o
 
 .cpp.o:
 	$(CXX) $(ROOTFLAGS) -c $< -o $@
-trkfit_if.o        : setting.h trkfit_if.cpp
+trkfit_if.o        : trkfit_if.cpp
 
 .PHONY: clean
 clean:
