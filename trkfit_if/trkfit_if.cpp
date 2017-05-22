@@ -12,6 +12,9 @@ Int_t                  t_true_trk; // flag for success/failure of track-finding 
 std::vector<Double_t>* t_X;        // hit position
 std::vector<Double_t>* t_Y;        // hit position
 std::vector<Double_t>* t_Z;        // hit position
+std::vector<Double_t>* t_PX;       // momentum at hit position
+std::vector<Double_t>* t_PY;       // momentum at hit position
+std::vector<Double_t>* t_PZ;       // momentum at hit position
 std::vector<Double_t>* t_gT;       // hit (global) time
 std::vector<Double_t>* t_pT;       // hit (proper) time
 std::vector<Double_t>* t_pID;      // hit by 1(e-), 2(e+), 3(gamma)
@@ -33,6 +36,9 @@ void set_readbranch( TChain* tree ){
   tree->SetBranchAddress( "t_X",        &t_X        );
   tree->SetBranchAddress( "t_Y",        &t_Y        );
   tree->SetBranchAddress( "t_Z",        &t_Z        );
+  tree->SetBranchAddress( "t_PX",       &t_PX       );
+  tree->SetBranchAddress( "t_PY",       &t_PY       );
+  tree->SetBranchAddress( "t_PZ",       &t_PZ       );
   tree->SetBranchAddress( "t_gT",       &t_gT       );
   tree->SetBranchAddress( "t_pT",       &t_pT       );
   tree->SetBranchAddress( "t_pID",      &t_pID      );
@@ -42,9 +48,9 @@ void set_readbranch( TChain* tree ){
   tree->SetBranchAddress( "gen_Z",      &t_gen_Z    );
   tree->SetBranchAddress( "gen_gT",     &t_gen_gT   );
   tree->SetBranchAddress( "gen_pT",     &t_gen_pT   );
-  tree->SetBranchAddress( "genPX",      &t_gen_PX   );
-  tree->SetBranchAddress( "genPY",      &t_gen_PY   );
-  tree->SetBranchAddress( "genPZ",      &t_gen_PZ   );
+  tree->SetBranchAddress( "gen_PX",     &t_gen_PX   );
+  tree->SetBranchAddress( "gen_PY",     &t_gen_PY   );
+  tree->SetBranchAddress( "gen_PZ",     &t_gen_PZ   );
 
   return;
 }
@@ -70,7 +76,9 @@ Int_t main( Int_t argc, Char_t** argv ){
 	      << Form("   Muon decay time (global,proper)=(%4.2f,%4.2f)",  t_gen_gT, t_gen_pT           ) << std::endl;
 
     for( Int_t ihit=0; ihit<t_X->size(); ihit++ ){ // START HIT-LOOP
-      std::cout << std::setw(6) << std::right << ihit << Form(" : (X,Y,Z)=(%4.2f,%4.2f,%4.2f)", t_X->at(ihit), t_Y->at(ihit), t_Z->at(ihit))
+      std::cout << std::setw(6) << std::right << ihit
+		<< Form(" : (X,Y,Z)=(%4.2f,%4.2f,%4.2f)",    t_X->at(ihit),  t_Y->at(ihit),  t_Z->at(ihit))
+		<< Form(", (PX,PY,PZ)=(%4.2f,%4.2f,%4.2f)", t_PX->at(ihit), t_PY->at(ihit), t_PZ->at(ihit))
 		<< ", (global time, proper time) = " << Form("(%4.2f,%4.2f)", t_gT ->at(ihit), t_pT ->at(ihit))
 		<< ", gen_pID = "  << t_pID     ->at(ihit)
 		<< ", EachDepE = " << t_EachDepE->at(ihit)

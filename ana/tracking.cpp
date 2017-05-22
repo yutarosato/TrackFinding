@@ -1,12 +1,14 @@
 #include "setting.h"
 
-const Int_t    fl_message         = 2; // 2(debug), 1(normal), 0(silent)
-const Int_t    fl_show            = 1000;
+const Int_t    fl_message         = 0; // 2(debug), 1(normal), 0(silent)
+const Int_t    fl_batch           = 1; // 0(show), 1(batch), 2(batch&save)
+const Int_t    fl_show            = 0;
+//+++++++++++++++++++++++++++++++++++++++++
 const Double_t th_show_energy_min = 150.0;
 const Double_t th_show_energy_max = 400.0;
 const Int_t    threshold_success  = 3; // Hit definition : >= threshold_success/range_success
 const Int_t    range_success      = 3;
-const Int_t    fl_batch           = 0; // 0(show), 1(batch), 2(batch&save)
+
 
 // seed of cluster
 std::vector<TGraph*> vg_seed_hit_xy;
@@ -106,7 +108,7 @@ Int_t main( Int_t argc, Char_t** argv ){
   
   for( Int_t ievt=0; ievt<nevt; ievt++ ){ // START EVENT-LOOP
     //if( ievt!=669 ) continue; // tmppppp
-    if( ievt==2000 ) break; // tmppppp
+    //if( ievt==200 ) break; // tmppppp
     if( fl_message && (cnt_show < fl_show || ievt==nevt-1) ) std::cout << "+++++++++++++++ ievt = " << ievt << " ++++++++++++++++++++" << std::endl;
     if( ievt%(nevt/100)==0 ) std::cout << "........ " << ievt/(nevt/100) << "%" << std::endl;
     // read event

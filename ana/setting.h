@@ -168,9 +168,9 @@ void set_outtree( TTree* tree ){
   tree->Branch( "gen_Z",      &t_gen_Z,     "gen_Z/D"   );
   tree->Branch( "gen_gT",     &t_gen_gT,    "gen_gT/D"  );
   tree->Branch( "gen_pT",     &t_gen_pT,    "gen_pT/D"  );
-  tree->Branch( "genPX",      &t_gen_PX,    "gen_PX/D"  );
-  tree->Branch( "genPY",      &t_gen_PY,    "gen_PY/D"  );
-  tree->Branch( "genPZ",      &t_gen_PZ,    "gen_PZ/D"  );
+  tree->Branch( "gen_PX",     &t_gen_PX,    "gen_PX/D"  );
+  tree->Branch( "gen_PY",     &t_gen_PY,    "gen_PY/D"  );
+  tree->Branch( "gen_PZ",     &t_gen_PZ,    "gen_PZ/D"  );
 
   return;
 }
