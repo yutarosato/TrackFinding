@@ -24,11 +24,14 @@ HitsArray::HitsArray():
   ClearEvent();
 };
 
-void HitsArray::InputHits( Int_t index, Double_t x, Double_t y, Double_t z, Double_t pt, Double_t gt, Int_t pID, Double_t EachDepE ){
+void HitsArray::InputHits( Int_t index, Double_t x, Double_t y, Double_t z, Double_t px, Double_t py, Double_t pz, Double_t pt, Double_t gt, Int_t pID, Double_t EachDepE ){
   m_Index.push_back           ( index                   );
   m_X.push_back               ( x                       );
   m_Y.push_back               ( y                       );
   m_Z.push_back               ( z                       );
+  m_PX.push_back              ( px                      );
+  m_PY.push_back              ( py                      );
+  m_PZ.push_back              ( pz                      );
   m_R.push_back               ( sqrt(pow(x,2)+pow(y,2)) );
   m_Phi.push_back             ( Phi_uk(y,x)             );
   m_VaneID.push_back          ( GetVaneID(Phi_uk(y,x))  );
@@ -47,6 +50,9 @@ void HitsArray::ClearEvent(){
   m_X.clear();
   m_Y.clear();
   m_Z.clear();
+  m_PX.clear();
+  m_PY.clear();
+  m_PZ.clear();
   m_R.clear();
   m_Phi.clear();
   m_VaneID.clear();

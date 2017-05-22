@@ -9,7 +9,7 @@ public:
   HitsArray();
   ~HitsArray();
 
-  void  InputHits( Int_t index, Double_t x, Double_t y, Double_t z, Double_t pt, Double_t gt, Int_t pID, Double_t EachDepE );
+  void  InputHits( Int_t index, Double_t x, Double_t y, Double_t z, Double_t px, Double_t py, Double_t pz, Double_t pt, Double_t gt, Int_t pID, Double_t EachDepE );
   void  ClearEvent();
   void  Print              ( Int_t fl_message=2 );
   void  Print_VaneID_Order ( Int_t fl_message=2 );
@@ -42,6 +42,9 @@ public:
   Double_t GetX               ( Int_t index ){ if( index>=m_X.size               () ){ std::cerr << "[ABORT] Wrong index for X"                      << std::endl, abort(); } return m_X.at               (index); }
   Double_t GetY               ( Int_t index ){ if( index>=m_Y.size               () ){ std::cerr << "[ABORT] Wrong index for Y"                      << std::endl, abort(); } return m_Y.at               (index); }
   Double_t GetZ               ( Int_t index ){ if( index>=m_Z.size               () ){ std::cerr << "[ABORT] Wrong index for Z"                      << std::endl, abort(); } return m_Z.at               (index); }
+  Double_t GetPX              ( Int_t index ){ if( index>=m_PX.size              () ){ std::cerr << "[ABORT] Wrong index for PX"                     << std::endl, abort(); } return m_PX.at              (index); }
+  Double_t GetPY              ( Int_t index ){ if( index>=m_PY.size              () ){ std::cerr << "[ABORT] Wrong index for PY"                     << std::endl, abort(); } return m_PY.at              (index); }
+  Double_t GetPZ              ( Int_t index ){ if( index>=m_PZ.size              () ){ std::cerr << "[ABORT] Wrong index for PZ"                     << std::endl, abort(); } return m_PZ.at              (index); }
   Double_t GetR               ( Int_t index ){ if( index>=m_R.size               () ){ std::cerr << "[ABORT] Wrong index for R"                      << std::endl, abort(); } return m_R.at               (index); }
   Double_t GetPhi             ( Int_t index ){ if( index>=m_Phi.size             () ){ std::cerr << "[ABORT] Wrong index for Phi"                    << std::endl, abort(); } return m_Phi.at             (index); }
   Int_t    GetVaneID          ( Int_t index ){ if( index>=m_VaneID.size          () ){ std::cerr << "[ABORT] Wrong index for VaneID"                 << std::endl, abort(); } return m_VaneID.at          (index); }
@@ -78,6 +81,9 @@ public:
   std::vector<Double_t> m_X;
   std::vector<Double_t> m_Y;
   std::vector<Double_t> m_Z;
+  std::vector<Double_t> m_PX;
+  std::vector<Double_t> m_PY;
+  std::vector<Double_t> m_PZ;
   std::vector<Double_t> m_R;
   std::vector<Double_t> m_Phi;
   std::vector<Int_t>    m_VaneID;

@@ -106,7 +106,7 @@ Int_t main( Int_t argc, Char_t** argv ){
   
   for( Int_t ievt=0; ievt<nevt; ievt++ ){ // START EVENT-LOOP
     //if( ievt!=669 ) continue; // tmppppp
-    if( ievt==200 ) break; // tmppppp
+    if( ievt==2000 ) break; // tmppppp
     if( fl_message && (cnt_show < fl_show || ievt==nevt-1) ) std::cout << "+++++++++++++++ ievt = " << ievt << " ++++++++++++++++++++" << std::endl;
     if( ievt%(nevt/100)==0 ) std::cout << "........ " << ievt/(nevt/100) << "%" << std::endl;
     // read event
@@ -166,7 +166,8 @@ Int_t main( Int_t argc, Char_t** argv ){
       if( tb_bodyStatus->at(ihit)!=0    ) continue; // injection hit-point (veto outgoing hit-point)
       if( tb_bodyTyp   ->at(ihit)<= 100 ) continue; // hit on vane
       if( tb_bodyTyp   ->at(ihit)>=1000 ) continue; // hit on vane
-      hits_info->InputHits( cnt_hit, tb_pos_x->at(ihit), tb_pos_y->at(ihit), tb_pos_z->at(ihit), tb_ptime->at(ihit), tb_gtime->at(ihit), tb_pID->at(ihit), tb_EachDepE->at(ihit) );
+      
+      hits_info->InputHits( cnt_hit, tb_pos_x->at(ihit), tb_pos_y->at(ihit), tb_pos_z->at(ihit), tb_mom_x->at(ihit), tb_mom_y->at(ihit), tb_mom_z->at(ihit), tb_ptime->at(ihit), tb_gtime->at(ihit), tb_pID->at(ihit), tb_EachDepE->at(ihit) );
       cnt_hit++;
     } // END HIT-LOOP
     
@@ -377,6 +378,9 @@ Int_t main( Int_t argc, Char_t** argv ){
 	t_X.push_back       ( hits_info->GetX       (sequenceNo.at(iseq)) );
 	t_Y.push_back       ( hits_info->GetY       (sequenceNo.at(iseq)) );
 	t_Z.push_back       ( hits_info->GetZ       (sequenceNo.at(iseq)) );
+	t_PX.push_back      ( hits_info->GetPX      (sequenceNo.at(iseq)) );
+	t_PY.push_back      ( hits_info->GetPY      (sequenceNo.at(iseq)) );
+	t_PZ.push_back      ( hits_info->GetPZ      (sequenceNo.at(iseq)) );
 	t_gT.push_back      ( hits_info->GetgT      (sequenceNo.at(iseq)) );
 	t_pT.push_back      ( hits_info->GetpT      (sequenceNo.at(iseq)) );
 	t_pID.push_back     ( hits_info->GetpID     (sequenceNo.at(iseq)) );
